@@ -3,7 +3,7 @@
 
 Personal portfolio site for showcasing skills, projects, and career highlights.
 
-![Status](https://img.shields.io/badge/status-live-brightgreen)
-![License](https://img.shields.io/badge/license-custom-lightgrey)
+![Static Badge](https://img.shields.io/badge/logic-Complete-blue?style=plastic)
+![Status](https://img.shields.io/badge/status-live-brightgreen?style=plastic)
 -----
 
