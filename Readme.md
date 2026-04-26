@@ -1,4 +1,4 @@
-# Marcel Rienks - Portfolio Website
+# My Portfolio Website
 
 A modern, responsive portfolio website built with Bootstrap and deployed on AWS using Terraform infrastructure as code. This site showcases IT Service Delivery Management and technology expertise in a professional, high-performance format.
 
