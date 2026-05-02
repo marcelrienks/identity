@@ -46,6 +46,10 @@ source "$LIB_DIR/validation.sh" || { echo "FATAL: Could not source validation.sh
 source "$LIB_DIR/state.sh" || { echo "FATAL: Could not source state.sh"; exit 1; }
 source "$LIB_DIR/deploy-cmd.sh" || { echo "FATAL: Could not source deploy-cmd.sh"; exit 1; }
 source "$LIB_DIR/update-cmd.sh" || { echo "FATAL: Could not source update-cmd.sh"; exit 1; }
+source "$LIB_DIR/multi-subdomain.sh" || { echo "FATAL: Could not source multi-subdomain.sh"; exit 1; }
+source "$LIB_DIR/rollback-cmd.sh" || { echo "FATAL: Could not source rollback-cmd.sh"; exit 1; }
+source "$LIB_DIR/versions-cmd.sh" || { echo "FATAL: Could not source versions-cmd.sh"; exit 1; }
+source "$LIB_DIR/validate-cmd.sh" || { echo "FATAL: Could not source validate-cmd.sh"; exit 1; }
 
 # Set log level from environment or default to INFO
 export LOG_LEVEL="${LOG_LEVEL:-INFO}"
@@ -55,15 +59,15 @@ export DEBUG_MODE=0
 # The cmd_deploy and cmd_update functions are already sourced above
 
 cmd_rollback() {
-    info "Rollback command - Phase 6 implementation"
+    rollback_command "$@"
 }
 
 cmd_versions() {
-    info "Versions command - Phase 6 implementation"
+    versions_command "$@"
 }
 
 cmd_validate() {
-    info "Validate command - Phase 5 implementation"
+    validate_command "$@"
 }
 
 cmd_status() {

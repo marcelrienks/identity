@@ -498,48 +498,48 @@ spec: "aws-static-website-cfn-deployment.md"
 
 ### Tasks (8 total)
 
-- [ ] **T039** Implement multi-subdomain parameter validation
+- [X] **T039** Implement multi-subdomain parameter validation
   - Extend deploy command to accept `--subdomains www,blog,docs` (comma-separated list)
   - Validate: Each subdomain is valid format, no duplicates, max 10 subdomains
   - Update CloudFormation template to accept SubdomainList parameter
   - File: [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh) (extend T014), [CloudFormation/s3-static-website.yaml](../../../CloudFormation/s3-static-website.yaml) (extend)
 
-- [ ] **T040** **[P]** Implement CloudFront behavior generation for multi-subdomain routing
+- [X] **T040** **[P]** Implement CloudFront behavior generation for multi-subdomain routing
   - For each subdomain: create CloudFront behavior mapping subdomain → S3 prefix (subdomain name as prefix)
   - Example: www.example.com → s3://bucket/www/*, blog.example.com → s3://bucket/blog/*
   - Update CloudFormation template to generate behaviors dynamically
   - File: [CloudFormation/s3-static-website.yaml](../../../CloudFormation/s3-static-website.yaml), [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh)
 
-- [ ] **T041** **[P]** Implement Route 53 alias record generation for multiple subdomains
+- [X] **T041** **[P]** Implement Route 53 alias record generation for multiple subdomains
   - Create Route 53 alias record for each subdomain pointing to CloudFront distribution
   - Update CloudFormation template to create multiple DNS records
   - Example: www.example.com, blog.example.com → all point to same CloudFront distribution
   - File: [CloudFormation/s3-static-website.yaml](../../../CloudFormation/s3-static-website.yaml)
 
-- [ ] **T042** Implement multi-subdomain file upload with S3 prefix routing
+- [X] **T042** Implement multi-subdomain file upload with S3 prefix routing
   - Organize local files by subdomain: `./www/index.html`, `./blog/index.html` (or in separate directories)
   - When uploading: prepend subdomain prefix to S3 key (www/index.html → s3://bucket/www/index.html)
   - Support configuration: file structure (flat with prefix) or directory-based (subdomain directories)
   - File: [lib/file-operations.sh](../../../lib/file-operations.sh), [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh)
 
-- [ ] **T043** **[P]** Implement multi-subdomain version tracking (separate histories per subdomain)
+- [X] **T043** **[P]** Implement multi-subdomain version tracking (separate histories per subdomain)
   - Version manifest per subdomain: `.deploy/versions/{version_id}-{subdomain}.json`
   - S3 storage: `s3://bucket/versions/{version_id}-{subdomain}.json`
   - Enable independent version tracking and rollback per subdomain
   - File: [lib/versioning.sh](../../../lib/versioning.sh)
 
-- [ ] **T044** **[P]** Implement multi-subdomain update command (update specific subdomain only)
+- [X] **T044** **[P]** Implement multi-subdomain update command (update specific subdomain only)
   - Extend update command: `./deploy.sh update --subdomain blog` → upload only blog files
   - Detect which subdomain files changed, upload only those with appropriate prefix
   - Update only the affected subdomain's version
   - File: [lib/update-cmd.sh](../../../lib/update-cmd.sh) (extend T028)
 
-- [ ] **T045** Implement multi-subdomain CloudFront invalidation
+- [X] **T045** Implement multi-subdomain CloudFront invalidation
   - When updating specific subdomain: invalidate paths for that subdomain only (e.g., `/blog/*`)
   - When updating all subdomains: invalidate `/*`
   - File: [lib/cloudfront.sh](../../../lib/cloudfront.sh), [lib/update-cmd.sh](../../../lib/update-cmd.sh)
 
-- [ ] **T046** **[P]** [US3] Integration test: Multi-subdomain deployment and independent updates
+- [X] **T046** **[P]** [US3] Integration test: Multi-subdomain deployment and independent updates
   - Test file: [tests/integration/test-us3-multi-subdomain.sh](../../../tests/integration/test-us3-multi-subdomain.sh) (new)
   - Verify: Deploy creates alias records for all subdomains
   - Verify: Each subdomain serves distinct content
@@ -563,7 +563,7 @@ spec: "aws-static-website-cfn-deployment.md"
 
 ### Tasks (7 total)
 
-- [ ] **T047** Implement `rollback` subcommand argument parsing and version validation
+- [X] **T047** Implement `rollback` subcommand argument parsing and version validation
   - Parse arguments: --version (optional, defaults to previous version), --confirm (skip confirmation prompt, required for CI/CD)
   - Load version manifest from `.deploy/versions/{version_id}.json`
   - Validate: Version exists locally and in S3
@@ -571,7 +571,7 @@ spec: "aws-static-website-cfn-deployment.md"
   - **SAFETY**: Always prompt user "Rollback will restore X files from version TIMESTAMP. Continue? (y/n)" unless --confirm flag provided
   - File: [lib/rollback-cmd.sh](../../../lib/rollback-cmd.sh) (new)
 
-- [ ] **T048** **[P]** Implement version history querying
+- [X] **T048** **[P]** Implement version history querying
   - Implement `versions --list` subcommand to show all available versions
   - Output format: timestamp, version_id, file_count, subdomain
   - Sort by timestamp (newest first)
@@ -579,32 +579,32 @@ spec: "aws-static-website-cfn-deployment.md"
   - Support --json output
   - File: [lib/versioning.sh](../../../lib/versioning.sh), [lib/versions-cmd.sh](../../../lib/versions-cmd.sh) (new)
 
-- [ ] **T049** **[P]** Implement detailed version information display
+- [X] **T049** **[P]** Implement detailed version information display
   - Implement `versions --show {version_id}` to display version details
   - Show: all files in version, hashes, sizes, timestamps
   - Support --json output for machine consumption
   - File: [lib/versions-cmd.sh](../../../lib/versions-cmd.sh), [lib/versioning.sh](../../../lib/versioning.sh)
 
-- [ ] **T050** Implement atomic rollback restoration (all-or-nothing restore)
+- [X] **T050** Implement atomic rollback restoration (all-or-nothing restore)
   - For each file in version manifest: copy from S3 versioned object to current key (or restore from version ID)
   - Ensure atomicity: if any file fails, rollback entire operation
   - Verify all files restored successfully
   - Report: Files restored count, timestamp of restored version
   - File: [lib/rollback-cmd.sh](../../../lib/rollback-cmd.sh), [lib/s3.sh](../../../lib/s3.sh)
 
-- [ ] **T051** **[P]** Implement CloudFront cache invalidation after rollback
+- [X] **T051** **[P]** Implement CloudFront cache invalidation after rollback
   - Invalidate `/*` to ensure all content refreshed
   - Poll invalidation completion (timeout: 5 minutes)
   - Report: Cache invalidation completed, content live in ~1-2 minutes
   - File: [lib/cloudfront.sh](../../../lib/cloudfront.sh), [lib/rollback-cmd.sh](../../../lib/rollback-cmd.sh)
 
-- [ ] **T052** **[P]** Implement rollback completion reporting and audit logging
+- [X] **T052** **[P]** Implement rollback completion reporting and audit logging
   - Generate rollback summary: from_version, to_version, files_restored, timestamp
   - Log rollback operation to `.deploy/deployments/` with details
   - Save new deployment state (current version = rolled-back version)
   - File: [lib/rollback-cmd.sh](../../../lib/rollback-cmd.sh), [lib/state.sh](../../../lib/state.sh)
 
-- [ ] **T053** **[P]** [US4] Integration test: Rollback functionality
+- [X] **T053** **[P]** [US4] Integration test: Rollback functionality
   - Test file: [tests/integration/test-us4-rollback.sh](../../../tests/integration/test-us4-rollback.sh) (new)
   - Verify: Rollback restores correct files
   - Verify: Rolled-back version is live within 2 minutes
@@ -627,14 +627,14 @@ spec: "aws-static-website-cfn-deployment.md"
 
 ### Tasks (6 total)
 
-- [ ] **T054** Implement `--dry-run` flag handling across all commands
+- [X] **T054** Implement `--dry-run` flag handling across all commands
   - Add --dry-run flag to deploy, update, rollback, destroy commands
   - In dry-run mode: skip all AWS API calls that modify resources (create, update, delete, upload)
   - In dry-run mode: still query AWS for validation (describe, list operations)
   - Report: Summary of what WOULD happen (resources created/modified/deleted, files uploaded)
   - File: [lib/dry-run.sh](../../../lib/dry-run.sh) (new), extend all command files
 
-- [ ] **T055** **[P]** Implement comprehensive pre-flight validation
+- [X] **T055** **[P]** Implement comprehensive pre-flight validation
   - Validate: AWS credentials exist and are valid (can connect to AWS)
   - Validate: IAM permissions sufficient for all planned operations
   - Validate: Domain format valid, not already in use by existing stack
@@ -644,21 +644,21 @@ spec: "aws-static-website-cfn-deployment.md"
   - Report: Each validation check result (pass/fail/warning)
   - File: [lib/validation.sh](../../../lib/validation.sh) (extend), [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh)
 
-- [ ] **T056** **[P]** Implement policy simulation for IAM permission validation
+- [X] **T056** **[P]** Implement policy simulation for IAM permission validation
   - Use AWS IAM `simulate-custom-policy` to test required permissions
   - Permissions needed: s3:*, cloudformation:*, cloudfront:*, route53:*, acm:*, iam:PassRole
   - Report: Which permissions are allowed, which are denied
   - Suggest: IAM policy changes needed if permissions missing
   - File: [lib/aws-common.sh](../../../lib/aws-common.sh), [lib/validation.sh](../../../lib/validation.sh)
 
-- [ ] **T057** **[P]** Implement `validate` subcommand for standalone validation
+- [X] **T057** **[P]** Implement `validate` subcommand for standalone validation
   - Implement: `./deploy.sh validate --domain example.com --subdomain www`
   - Run all pre-flight checks without executing any deployment
   - Report: Summary of all validation results
   - Use --json flag for machine-readable output
   - File: [lib/validate-cmd.sh](../../../lib/validate-cmd.sh) (new)
 
-- [ ] **T058** **[P]** Implement actionable error messages and suggestions
+- [X] **T058** **[P]** Implement actionable error messages and suggestions
   - For each validation failure: provide clear reason + suggestion for resolution
   - Examples:
     - "IAM role missing s3:PutObject permission" → "Add this policy to your role: ..."
@@ -666,7 +666,7 @@ spec: "aws-static-website-cfn-deployment.md"
     - "Local file missing: index.html" → "Create file at ./index.html or specify --source-dir"
   - File: [lib/validation.sh](../../../lib/validation.sh), error message library
 
-- [ ] **T059** **[P]** [US5] Integration test: Dry-run and validation
+- [X] **T059** **[P]** [US5] Integration test: Dry-run and validation
   - Test file: [tests/integration/test-us5-validation.sh](../../../tests/integration/test-us5-validation.sh) (new)
   - Verify: Dry-run doesn't create/modify AWS resources
   - Verify: Dry-run reports what would be done
@@ -686,33 +686,33 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### Group A: Documentation & Configuration
 
-- [ ] **T060** **[P]** Create comprehensive README and usage documentation
+- [X] **T060** **[P]** Create comprehensive README and usage documentation
   - File: [README.md](../../../README.md) (update with deployment guide)
   - Include: Quick start, command reference, parameter guide, examples, troubleshooting
   - Include: Architecture diagram, performance expectations, cost estimates
   - Include: Security considerations, IAM policy template
 
-- [ ] **T061** **[P]** Create .deployrc template and configuration documentation
+- [X] **T061** **[P]** Create .deployrc template and configuration documentation
   - File: [.deployrc.example](../../../.deployrc.example) (new)
   - Document: All configuration options, defaults, examples
   - Document: File inclusion/exclusion patterns with examples
   - Include: Comments explaining each option
 
-- [ ] **T062** **[P]** Create deployment script inline documentation (comments)
+- [X] **T062** **[P]** Create deployment script inline documentation (comments)
   - Add: Detailed function docstrings (purpose, parameters, return values, error handling)
   - Add: Inline comments explaining complex logic
   - File: [deploy.sh](../../../deploy.sh), [lib/*.sh](../../../lib/) (all)
 
 #### Group B: Error Handling & Resilience
 
-- [ ] **T063** Implement comprehensive error handling and recovery
+- [X] **T063** Implement comprehensive error handling and recovery
   - Implement: Graceful handling of all identified error categories (T2-T6 from plan.md Error Handling Strategy)
   - Implement: Retry logic with exponential backoff for transient failures
   - Implement: Partial failure recovery (resume from where it failed)
   - Implement: Consistent exit codes (0=success, 1=general error, 2=validation, 3=AWS error, 4=CFN error, 5=file error, 6=network error, 7=config error)
   - File: [lib/error-handling.sh](../../../lib/error-handling.sh) (new), [deploy.sh](../../../deploy.sh)
 
-- [ ] **T064** Implement timeout handling and graceful degradation
+- [X] **T064** Implement timeout handling and graceful degradation
   - Implement: Configurable timeouts for CloudFormation (default 10 min), CloudFront (default 5 min), health checks (default 60 sec)
   - Implement: Health check degradation (deployment succeeds even if health checks fail; report warning)
   - Implement: CloudFront invalidation degradation (deployment succeeds even if invalidation times out; cache will expire eventually)
@@ -720,14 +720,14 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### Group C: Testing & Quality
 
-- [ ] **T065** **[P]** Create unit test suite for Bash functions
+- [X] **T065** **[P]** Create unit test suite for Bash functions
   - Test file: [tests/unit/test-argument-parsing.sh](../../../tests/unit/test-argument-parsing.sh) (new)
   - Test file: [tests/unit/test-file-operations.sh](../../../tests/unit/test-file-operations.sh) (new)
   - Test file: [tests/unit/test-validation.sh](../../../tests/unit/test-validation.sh) (new)
   - Mock AWS CLI calls to avoid real AWS operations
   - Test 15-20 critical functions with happy path + error cases
 
-- [ ] **T066** **[P]** Create end-to-end test suite for full workflows
+- [X] **T066** **[P]** Create end-to-end test suite for full workflows
   - Test file: [tests/e2e/test-deploy-update-rollback.sh](../../../tests/e2e/test-deploy-update-rollback.sh) (new)
   - Full workflow: deploy → update → verify → rollback → verify
   - Use staging AWS account for real AWS operations
@@ -735,14 +735,14 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### Group D: Performance & Optimization
 
-- [ ] **T067** **[P]** Optimize file upload parallelization and performance
+- [X] **T067** **[P]** Optimize file upload parallelization and performance
   - Benchmark: Measure upload time for 50, 100, 500 files
   - Tune: Concurrent upload batch size (currently 5; test 3, 5, 10)
   - Optimize: Parallel health checks (run 3-5 checks concurrently)
   - Document: Performance metrics and tuning guide
   - File: [lib/s3.sh](../../../lib/s3.sh), performance benchmarking script
 
-- [ ] **T068** **[P]** Implement progress reporting and status output enhancements
+- [X] **T068** **[P]** Implement progress reporting and status output enhancements
   - Implement: Progress bars for file uploads (X/Y files, percentage)
   - Implement: Timing information (elapsed time, ETA)
   - Implement: Verbose logging mode (--verbose flag for debugging)
@@ -751,14 +751,14 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### Group E: Production Readiness
 
-- [ ] **T069** **[P]** Create security audit checklist
+- [X] **T069** **[P]** Create security audit checklist
   - File: [SECURITY.md](../../../SECURITY.md) (new)
   - Document: Credential handling practices, S3 security settings, CloudFront HTTPS enforcement
   - Document: IAM least-privilege policy template
   - Document: Logging and audit trail practices
   - Document: How to report security issues
 
-- [ ] **T070** **[P]** Create operations guide and troubleshooting documentation
+- [X] **T070** **[P]** Create operations guide and troubleshooting documentation
   - File: [OPERATIONS.md](../../../OPERATIONS.md) (new)
   - Document: Common issues and resolution steps
   - Document: How to monitor deployments, check CloudFormation events
