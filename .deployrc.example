@@ -1,0 +1,147 @@
+# AWS Static Website Deployment Configuration
+# ============================================
+#
+# Copy this file to .deployrc and edit with your settings.
+# Format: YAML (key: value)
+#
+# Usage: ./deploy.sh will automatically load .deployrc if it exists
+#
+
+# Required: Website domain name
+# Example: example.com
+domain: example.com
+
+# Optional: Subdomain (default: www)
+# Examples: www, blog, docs, api
+# Can be comma-separated for multiple subdomains (Phase 5)
+subdomain: www
+
+# Optional: AWS region (default: us-east-1)
+# Note: Must be us-east-1 for CloudFront with ACM certificate (CloudFront requirement)
+# Other regions: eu-west-1, eu-central-1, ap-southeast-1, us-west-2, etc.
+region: us-east-1
+
+# Optional: Source directory with website files (default: ./)
+# This directory should contain your HTML, CSS, JS, images, etc.
+source_dir: ./
+
+# Optional: AWS CLI profile to use (default: default)
+# Set this if you have multiple AWS profiles configured
+# Profiles are defined in ~/.aws/credentials and ~/.aws/config
+aws_profile: default
+
+# Optional: Include patterns (files to deploy)
+# Default patterns cover most web assets: HTML, CSS, JS, JSON, images, fonts
+# Add custom patterns here for additional file types
+# Format: YAML array or comma-separated list
+include_patterns:
+  - "*.html"
+  - "*.css"
+  - "*.js"
+  - "*.json"
+  - "*.jpg"
+  - "*.jpeg"
+  - "*.png"
+  - "*.svg"
+  - "*.webp"
+  - "*.gif"
+  - "*.ico"
+  - "*.woff"
+  - "*.woff2"
+  - "*.ttf"
+  - "*.otf"
+
+# Optional: Exclude patterns (files to skip)
+# These patterns are always excluded regardless of include_patterns
+# Security: .env* and *.key files are ALWAYS excluded to prevent credential leaks
+exclude_patterns:
+  - "node_modules/"
+  - ".git/"
+  - ".env*"
+  - "*.tmp"
+  - ".DS_Store"
+  - "*.pem"
+  - "*.key"
+
+# Optional: CloudFront cache control settings
+# cache_default_ttl: Default cache lifetime in seconds (default: 86400 = 1 day)
+# cache_max_ttl: Maximum cache lifetime in seconds (default: 31536000 = 1 year)
+# cache_default_ttl: 86400
+# cache_max_ttl: 31536000
+
+# Optional: Enable verbose output
+# Set to true to see detailed debug information during deployment
+# verbose: false
+
+# Optional: Enable dry-run mode
+# Set to true to validate configuration without making any AWS changes
+# Useful for testing before actual deployment
+# dry_run: false
+
+# ============================================
+# Environment Variable Overrides
+# ============================================
+#
+# Settings can also be configured via environment variables:
+#
+#   export DEPLOY_DOMAIN="example.com"
+#   export DEPLOY_SUBDOMAIN="www"
+#   export DEPLOY_REGION="us-east-1"
+#   export DEPLOY_SOURCE_DIR="./"
+#   export DEPLOY_AWS_PROFILE="default"
+#   export DEPLOY_DRY_RUN="1"
+#   export DEPLOY_VERBOSE="1"
+#
+# Command-line arguments override all other settings:
+#
+#   ./deploy.sh deploy --domain example.com --subdomain www --dry-run
+#
+# Priority order: CLI args > Environment vars > Config file (.deployrc) > Defaults
+#
+
+# ============================================
+# AWS Credentials Setup
+# ============================================
+#
+# The deploy script requires AWS credentials. Configure using one of:
+#
+# 1. Environment variables (NOT recommended for production):
+#    export AWS_ACCESS_KEY_ID="AKIA..."
+#    export AWS_SECRET_ACCESS_KEY="..."
+#
+# 2. AWS credentials file (~/.aws/credentials):
+#    [default]
+#    aws_access_key_id = AKIA...
+#    aws_secret_access_key = ...
+#
+#    [other-profile]
+#    aws_access_key_id = AKIA...
+#    aws_secret_access_key = ...
+#
+# 3. IAM role (recommended for CI/CD):
+#    Script will automatically use IAM role if running on EC2/ECS/Lambda
+#
+# See AWS documentation: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
+#
+
+# ============================================
+# Security Best Practices
+# ============================================
+#
+# 1. NEVER commit .deployrc with real credentials to version control
+#    Keep .deployrc in .gitignore
+#
+# 2. NEVER commit files containing secrets:
+#    - .env files
+#    - Private keys (*.pem, *.key)
+#    - API keys, tokens
+#    - Database passwords
+#
+# 3. Use AWS IAM roles instead of access keys when possible
+#
+# 4. Use separate AWS accounts/profiles for staging and production
+#
+# 5. Enable AWS CloudTrail to audit all deployments
+#
+# 6. Use AWS Secrets Manager for sensitive configuration
+#

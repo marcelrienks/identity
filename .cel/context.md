@@ -1,7 +1,7 @@
 # Project Context: Identity Portfolio Website
 
-**Last Read:** 2 May 2026  
-**Status:** Initial scan complete
+**Last Read:** 2 May 2026 (rescanned — docs updated)  
+**Status:** Cache miss — new scan + hash update
 
 ---
 
@@ -89,7 +89,7 @@ Professional portfolio website for Marcel Rienks showcasing 20+ years IT Service
 
 | File | MD5 |
 |------|-----|
-| Readme.md | a8c3f5e2b1d4c9a7f6e3b2c1d5a8f9e2 |
+| Readme.md | 13569c9696047e54f2321c538cadc35e |
 
 ---
 

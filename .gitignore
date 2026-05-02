@@ -1,1 +1,26 @@
 *Zone.Identifier
+
+# Deployment configuration (may contain credentials)
+.deployrc
+.deployrc.local
+.deploy-config.*
+
+# Deployment state and logs (local machine state, not version controlled)
+.deploy/
+*.log
+
+# AWS credentials (if accidentally placed in repo)
+.aws/
+aws_credentials
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
