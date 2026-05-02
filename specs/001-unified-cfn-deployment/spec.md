@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-aws-static-website-cfn`  
 **Created**: 2026-05-02  
-**Status**: Draft  
+**Status**: Complete  
 **Input**: User description: "Static website with unified CloudFormation deployment and update script. End result: static website deployed to AWS S3 with Route 53 domain and custom subdomain. Ability to provision infrastructure and upload initial files via CloudFormation. Ability to update static site content post-deployment. Both deployment and updates achieved through same unified script with deploy and update commands. No Terraform or other deployment tools."
 
 ## User Scenarios & Testing *(mandatory)*
