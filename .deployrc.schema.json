@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AWS Static Website Deployment Configuration Schema",
+  "description": "Configuration schema for deploy.sh",
+  "type": "object",
+  "required": ["domain"],
+  "properties": {
+    "domain": {
+      "type": "string",
+      "description": "Website domain name (e.g., example.com)",
+      "pattern": "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\\.?$"
+    },
+    "subdomain": {
+      "type": "string",
+      "description": "Subdomain (e.g., www, blog; default: www)",
+      "pattern": "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$",
+      "default": "www"
+    },
+    "region": {
+      "type": "string",
+      "description": "AWS region (default: us-east-1)",
+      "pattern": "^[a-z]{2}-[a-z]+-[0-9][a-z]?$",
+      "default": "us-east-1"
+    },
+    "source_dir": {
+      "type": "string",
+      "description": "Source directory with website files (default: ./)",
+      "default": "./"
+    },
+    "aws_profile": {
+      "type": "string",
+      "description": "AWS CLI profile to use (default: default)",
+      "default": "default"
+    },
+    "include_patterns": {
+      "type": "array",
+      "description": "File patterns to include in deployment",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "*.html",
+        "*.css",
+        "*.js",
+        "*.json",
+        "*.jpg",
+        "*.png",
+        "*.svg",
+        "*.webp",
+        "*.gif",
+        "*.ico",
+        "*.woff2",
+        "*.ttf"
+      ]
+    },
+    "exclude_patterns": {
+      "type": "array",
+      "description": "File patterns to exclude from deployment",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "node_modules/",
+        ".git/",
+        ".env*",
+        "*.tmp",
+        ".DS_Store"
+      ]
+    },
+    "cache_default_ttl": {
+      "type": "integer",
+      "description": "Default cache TTL in seconds (default: 86400)",
+      "minimum": 0,
+      "default": 86400
+    },
+    "cache_max_ttl": {
+      "type": "integer",
+      "description": "Maximum cache TTL in seconds (default: 31536000)",
+      "minimum": 0,
+      "default": 31536000
+    },
+    "verbose": {
+      "type": "boolean",
+      "description": "Enable verbose logging (default: false)",
+      "default": false
+    },
+    "dry_run": {
+      "type": "boolean",
+      "description": "Enable dry-run mode (validate without making changes; default: false)",
+      "default": false
+    }
+  },
+  "additionalProperties": false
+}

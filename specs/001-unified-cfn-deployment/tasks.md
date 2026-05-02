@@ -74,40 +74,40 @@ spec: "aws-static-website-cfn-deployment.md"
 
 ### Tasks (5 total, all parallel)
 
-- [ ] **T001** **[P]** Create project structure per implementation plan in `./deploy.sh` directory
+- [X] **T001** **[P]** Create project structure per implementation plan in `./deploy.sh` directory
   - Include directory structure: `./lib/` (functions), `./tests/` (unit/integration), `./.deploy/` (state), `./CloudFormation/` (templates)
   - Create `.gitignore` to exclude: `.deployrc` (credentials), `.deploy/` (state), `*.log`, `.aws/` (credentials)
   - File: [deploy.sh](../../../deploy.sh) (new), [.gitignore](../../../.gitignore) (update)
 
-- [ ] **T002** **[P]** Initialize Bash script skeleton with error handling, logging, and argument parsing framework
+- [X] **T002** **[P]** Initialize Bash script skeleton with error handling, logging, and argument parsing framework
   - Implement: Logging functions (info/warn/error), exit code handlers, signal traps (SIGINT, SIGTERM)
   - Implement: Global constants (SCRIPT_DIR, LOG_DIR, DEPLOY_DIR, AWS CLI v2 detection)
   - File: [deploy.sh](../../../deploy.sh) (main), [lib/logging.sh](../../../lib/logging.sh) (new), [lib/common.sh](../../../lib/common.sh) (new)
 
-- [ ] **T003** **[P]** Create command routing structure for subcommands (deploy, update, rollback, validate, status, versions, destroy)
+- [X] **T003** **[P]** Create command routing structure for subcommands (deploy, update, rollback, validate, status, versions, destroy)
   - Implement: Subcommand parser with `case` statement
   - Implement: Help/usage output for each subcommand
   - File: [deploy.sh](../../../deploy.sh) (main control flow), [lib/cli.sh](../../../lib/cli.sh) (new)
 
-- [ ] **T004** **[P]** Set up configuration management system (layered: defaults → config file → CLI args → env vars)
+- [X] **T004** **[P]** Set up configuration management system (layered: defaults → config file → CLI args → env vars)
   - Implement: `.deployrc` YAML parser (using `jq` fallback if YAML parser unavailable)
   - Implement: CLI argument parsing for all flags (--domain, --subdomain, --region, --source-dir, --aws-profile, --dry-run)
   - Implement: Environment variable resolution with priority order
   - File: [lib/config.sh](../../../lib/config.sh) (new), `.deployrc` example (new)
 
-- [ ] **T005** **[P]** Create AWS credential and permission validation framework
+- [X] **T005** **[P]** Create AWS credential and permission validation framework
   - Implement: Functions to detect AWS CLI v2 installation and version
   - Implement: Functions to verify AWS credentials (AccessKey, assumed role, IAM role)
   - Implement: IAM permission checker (simulate policy evaluation for required permissions)
   - File: [lib/aws-common.sh](../../../lib/aws-common.sh) (new)
 
-- [ ] **T004a** **[P]** Create .deployrc schema and validation framework
+- [X] **T004a** **[P]** Create .deployrc schema and validation framework
   - Implement: YAML schema definition (.deployrc.schema.json) with required fields (domain, region, source_dir)
   - Implement: Validation function to check .deployrc against schema (required fields, type checking, bounds validation)
   - Implement: Error reporting for schema violations (e.g., "domain must be valid FQDN")
   - File: [.deployrc.schema.json](.deployrc.schema.json) (new), [lib/config.sh](../../../lib/config.sh) (update)
 
-- [ ] **T005a** **[P]** Implement secrets pattern detection and file scanning
+- [X] **T005a** **[P]** Implement secrets pattern detection and file scanning
   - Implement: `scan_file_for_secrets()` function detecting patterns: *.pem, *.key, *.env*, api_key, password, secret, token, credential
   - Implement: `validate_files_for_secrets()` scanning all files before upload; reject files matching patterns
   - Implement: Actionable error messages (e.g., "File 'config.env' contains secret patterns. Remove or add to .deployignore")
@@ -129,48 +129,48 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### Group A: AWS API Wrappers & State Management
 
-- [ ] **T006** **[P]** Implement AWS CloudFormation API wrapper functions
+- [X] **T006** **[P]** Implement AWS CloudFormation API wrapper functions
   - Implement: `cfn_stack_exists()`, `cfn_describe_stack()`, `cfn_get_stack_status()`, `cfn_create_stack()`, `cfn_update_stack()`
   - Implement: Stack output parser (extract S3 bucket, CloudFront domain, Route53 zone ID from stack outputs)
   - Implement: Stack event poller (monitor CREATE/UPDATE progress, report errors)
   - Error handling: Timeout after 10 minutes, retry logic with exponential backoff
   - File: [lib/cloudformation.sh](../../../lib/cloudformation.sh) (new)
 
-- [ ] **T007** **[P]** Implement AWS S3 API wrapper functions for static site operations
+- [X] **T007** **[P]** Implement AWS S3 API wrapper functions for static site operations
   - Implement: `s3_bucket_exists()`, `s3_create_bucket()`, `s3_get_object_metadata()`, `s3_list_objects()`
   - Implement: `s3_upload_object()` with Content-Type and Cache-Control header support
   - Implement: File hash comparison (SHA256) for diff-based uploads
   - Implement: S3 versioning enable/disable
   - File: [lib/s3.sh](../../../lib/s3.sh) (new)
 
-- [ ] **T008** **[P]** Implement AWS CloudFront API wrapper functions for cache invalidation
+- [X] **T008** **[P]** Implement AWS CloudFront API wrapper functions for cache invalidation
   - Implement: `cf_get_distribution()`, `cf_create_invalidation()`, `cf_describe_invalidation()`
   - Implement: Invalidation path optimizer (use `/*` for >100 files, else list specific paths)
   - Implement: Invalidation poller (monitor completion, timeout after 5 minutes)
   - File: [lib/cloudfront.sh](../../../lib/cloudfront.sh) (new)
 
-- [ ] **T009** **[P]** Implement AWS Route 53 API wrapper functions for DNS management
+- [X] **T009** **[P]** Implement AWS Route 53 API wrapper functions for DNS management
   - Implement: `r53_zone_exists()`, `r53_get_zone_id()`, `r53_create_alias_record()`, `r53_list_records()`
   - Implement: DNS propagation checker (verify domain resolves to CloudFront)
   - File: [lib/route53.sh](../../../lib/route53.sh) (new)
 
 #### Group B: File Operations & Version Management
 
-- [ ] **T010** **[P]** Implement file discovery and filtering system with include/exclude patterns
+- [X] **T010** **[P]** Implement file discovery and filtering system with include/exclude patterns
   - Implement: `find_files_to_upload()` with include pattern matching (*.html, *.css, *.js, *.json, *.jpg, *.png, *.svg, *.webp, *.gif, *.ico, *.woff2, *.ttf)
   - Implement: Exclude pattern filtering (node_modules/, .git/, .env*, .DS_Store, *.md, *.tmp)
   - Implement: Configurable patterns via .deployrc
   - Implement: File inventory generator (list all files with sizes, hashes)
   - File: [lib/file-operations.sh](../../../lib/file-operations.sh) (new)
 
-- [ ] **T011** **[P]** Implement version snapshot system using S3 metadata and local JSON manifests
+- [X] **T011** **[P]** Implement version snapshot system using S3 metadata and local JSON manifests
   - Implement: `create_version_manifest()` (timestamp-based version ID: YYYYMMDD-HHMMSS)
   - Implement: Manifest storage in two locations: S3 (`versions/YYYYMMDD-HHMMSS.json`) and local (`.deploy/versions/YYYYMMDD-HHMMSS.json`)
   - Implement: `list_versions()`, `get_version_manifest()` for version history queries
   - Implement: Version metadata structure (version_id, timestamp, files[], subdomain, domain)
   - File: [lib/versioning.sh](../../../lib/versioning.sh) (new)
 
-- [ ] **T012** **[P]** Implement health check and validation framework for post-deployment verification
+- [X] **T012** **[P]** Implement health check and validation framework for post-deployment verification
   - Implement: `validate_aws_credentials()`, `validate_domain_format()`, `validate_source_directory()`, `validate_local_files_exist()`
   - Implement: `health_check_https_endpoint()` (verify HTTPS certificate valid, check TLS 1.2+)
   - Implement: `health_check_dns_resolution()` (verify domain resolves via Route53 to CloudFront)
@@ -178,7 +178,7 @@ spec: "aws-static-website-cfn-deployment.md"
   - Implement: Latency measurement (P50, P95, P99)
   - File: [lib/validation.sh](../../../lib/validation.sh) (new)
 
-- [ ] **T013** **[P]** Implement state tracking system for tracking deployments and stack metadata
+- [X] **T013** **[P]** Implement state tracking system for tracking deployments and stack metadata
   - Implement: `.deploy/deployments/` directory for deployment records (YYYY-MM-DD.log, JSON outputs)
   - Implement: `.deploy/state.json` for tracking current stack info (domain, subdomain, region, stack ID, S3 bucket, CF distribution)
   - Implement: State persistence functions (`save_deployment_state()`, `load_deployment_state()`)

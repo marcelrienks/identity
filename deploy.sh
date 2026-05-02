@@ -1,235 +1,153 @@
 #!/bin/bash
 
-# Unified deployment and update script for static portfolio website
-# Usage: ./deploy.sh deploy [parameters] OR ./deploy.sh update
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                                                              ║
+# ║  AWS Static Website Deployment Tool                                         ║
+# ║  Unified deployment and management for static websites on AWS               ║
+# ║                                                                              ║
+# ║  Usage: ./deploy.sh COMMAND [OPTIONS]                                       ║
+# ║  For help: ./deploy.sh help                                                 ║
+# ║  Requires: Bash 4.0+ (for associative arrays)                              ║
+# ║                                                                              ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
 
-set -e
+set -o pipefail
 
-# Colors for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
-COMMAND=${1:-}
-STACK_NAME=${2:-my-portfolio-site}
-HOSTED_ZONE=${3:-}
-DOMAIN_NAME=${4:-}
-SUBDOMAIN=${5:-www}
-REGION="us-east-1"
-
-# Function to display usage
-usage() {
-    cat << EOF
-${BLUE}Static Portfolio Website - Deployment Script${NC}
-
-${YELLOW}Usage:${NC}
-  ${BLUE}Deploy:${NC}
-    ./deploy.sh deploy <stack-name> <hosted-zone> <domain-name> <subdomain>
-    
-    Example:
-    ./deploy.sh deploy my-portfolio-site example.com. example.com www
-    
-  ${BLUE}Update:${NC}
-    ./deploy.sh update <stack-name>
-    
-    Example:
-    ./deploy.sh update my-portfolio-site
-
-${YELLOW}Parameters:${NC}
-  stack-name    CloudFormation stack name (default: my-portfolio-site)
-  hosted-zone   Route 53 hosted zone WITH trailing dot (e.g., example.com.)
-  domain-name   Domain name WITHOUT trailing dot (e.g., example.com)
-  subdomain     Subdomain to provision (default: www)
-
-${YELLOW}Important:${NC}
-  - Deploy must be in us-east-1 region (ACM certificate requirement for CloudFront)
-  - Hosted zone must already exist in Route 53
-  - For updates, only stack-name is required
-EOF
+# Check bash version (need 4.0+ for associative arrays)
+if [[ ${BASH_VERSINFO[0]} -lt 4 ]]; then
+    echo "ERROR: Bash 4.0+ is required. Current version: $BASH_VERSION"
+    echo "macOS users: Install bash 4+ via Homebrew: brew install bash"
     exit 1
+fi
+
+# Get script directory for sourcing libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$SCRIPT_DIR/lib"
+
+# Source library modules in correct order (dependencies first)
+if [[ ! -f "$LIB_DIR/logging.sh" ]]; then
+    echo "ERROR: Library files not found. Expected: $LIB_DIR/"
+    echo "Did you forget to initialize the project structure?"
+    exit 1
+fi
+
+source "$LIB_DIR/logging.sh" || { echo "FATAL: Could not source logging.sh"; exit 1; }
+source "$LIB_DIR/common.sh" || { echo "FATAL: Could not source common.sh"; exit 1; }
+source "$LIB_DIR/config.sh" || { echo "FATAL: Could not source config.sh"; exit 1; }
+source "$LIB_DIR/cli.sh" || { echo "FATAL: Could not source cli.sh"; exit 1; }
+source "$LIB_DIR/aws-common.sh" || { echo "FATAL: Could not source aws-common.sh"; exit 1; }
+source "$LIB_DIR/cloudformation.sh" || { echo "FATAL: Could not source cloudformation.sh"; exit 1; }
+source "$LIB_DIR/s3.sh" || { echo "FATAL: Could not source s3.sh"; exit 1; }
+source "$LIB_DIR/cloudfront.sh" || { echo "FATAL: Could not source cloudfront.sh"; exit 1; }
+source "$LIB_DIR/route53.sh" || { echo "FATAL: Could not source route53.sh"; exit 1; }
+source "$LIB_DIR/file-operations.sh" || { echo "FATAL: Could not source file-operations.sh"; exit 1; }
+source "$LIB_DIR/versioning.sh" || { echo "FATAL: Could not source versioning.sh"; exit 1; }
+source "$LIB_DIR/validation.sh" || { echo "FATAL: Could not source validation.sh"; exit 1; }
+source "$LIB_DIR/state.sh" || { echo "FATAL: Could not source state.sh"; exit 1; }
+
+# Set log level from environment or default to INFO
+export LOG_LEVEL="${LOG_LEVEL:-INFO}"
+export DEBUG_MODE=0
+
+# Placeholder command functions (to be implemented in future phases)
+cmd_deploy() {
+    info "Deploy command - Phase 3 implementation"
 }
 
-# Function to deploy infrastructure with CloudFormation
-deploy() {
-    if [ -z "$HOSTED_ZONE" ] || [ -z "$DOMAIN_NAME" ]; then
-        echo -e "${RED}❌ Error: Missing parameters for deploy${NC}"
-        usage
-    fi
+cmd_update() {
+    info "Update command - Phase 4 implementation"
+}
 
-    echo -e "${BLUE}🚀 Deploying infrastructure with CloudFormation...${NC}"
-    echo -e "${BLUE}Stack: ${STACK_NAME}${NC}"
-    echo -e "${BLUE}Domain: ${SUBDOMAIN}.${DOMAIN_NAME}${NC}"
-    echo -e "${BLUE}Region: ${REGION}${NC}"
-    echo ""
+cmd_rollback() {
+    info "Rollback command - Phase 6 implementation"
+}
 
-    aws cloudformation deploy \
-        --template-file CloudFormation/s3-static-website.yaml \
-        --stack-name "${STACK_NAME}" \
-        --parameter-overrides \
-            HostedZoneName="${HOSTED_ZONE}" \
-            DomainName="${DOMAIN_NAME}" \
-            Subdomain="${SUBDOMAIN}" \
-        --region "${REGION}" \
-        --capabilities CAPABILITY_IAM
+cmd_versions() {
+    info "Versions command - Phase 6 implementation"
+}
 
-    echo ""
-    echo -e "${GREEN}✅ CloudFormation stack deployed successfully!${NC}"
-    echo ""
+cmd_validate() {
+    info "Validate command - Phase 5 implementation"
+}
 
-    # Retrieve stack outputs
-    echo -e "${BLUE}📋 Stack Outputs:${NC}"
-    aws cloudformation describe-stacks \
-        --stack-name "${STACK_NAME}" \
-        --region "${REGION}" \
-        --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' \
-        --output table
+cmd_status() {
+    info "Status command - Phase 8 implementation"
+}
 
-    echo ""
-    echo -e "${YELLOW}📤 Uploading website files to S3...${NC}"
+cmd_destroy() {
+    info "Destroy command - Phase 8 implementation"
+}
+
+# Register all commands
+register_command "deploy" "cmd_deploy" "Provision AWS infrastructure and deploy initial website"
+register_command "update" "cmd_update" "Upload modified website files to live S3 bucket"
+register_command "rollback" "cmd_rollback" "Revert website to previous version"
+register_command "versions" "cmd_versions" "Manage and view deployment versions"
+register_command "validate" "cmd_validate" "Validate configuration and permissions (dry-run)"
+register_command "status" "cmd_status" "Check current deployment status"
+register_command "destroy" "cmd_destroy" "Delete AWS infrastructure and resources"
+
+# ============================================================================
+# MAIN EXECUTION
+# ============================================================================
+
+main() {
+    # Parse global flags
+    local -a args=("$@")
+    local verbose_flag=0
     
-    # Get S3 bucket name from CloudFormation outputs
-    BUCKET_NAME=$(aws cloudformation describe-stacks \
-        --stack-name "${STACK_NAME}" \
-        --region "${REGION}" \
-        --query 'Stacks[0].Outputs[?OutputKey==`S3BucketName`].OutputValue' \
-        --output text)
-
-    if [ -z "$BUCKET_NAME" ]; then
-        echo -e "${RED}❌ Could not retrieve S3 bucket name from CloudFormation${NC}"
-        exit 1
-    fi
-
-    # Sync files to S3
-    aws s3 sync . "s3://${BUCKET_NAME}/" \
-        --exclude "CloudFormation/*" \
-        --exclude "*.sh" \
-        --exclude ".git/*" \
-        --exclude ".github/*" \
-        --exclude ".specify/*" \
-        --exclude ".vscode/*" \
-        --exclude ".cel/*" \
-        --exclude ".gitignore" \
-        --exclude "Readme.md" \
-        --exclude ".DS_Store" \
-        --delete
-
-    echo ""
-    echo -e "${BLUE}🔄 Invalidating CloudFront cache...${NC}"
+    # Remove verbose flag if present
+    for ((i=0; i<${#args[@]}; i++)); do
+        case "${args[$i]}" in
+            -v|--verbose|--debug)
+                verbose_flag=1
+                export LOG_LEVEL="DEBUG"
+                export DEBUG_MODE=1
+                # Remove this argument
+                args=("${args[@]:0:$i}" "${args[@]:$((i+1))}")
+                ((i--))
+                ;;
+        esac
+    done
     
-    # Get CloudFront distribution ID from CloudFormation outputs
-    DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
-        --stack-name "${STACK_NAME}" \
-        --region "${REGION}" \
-        --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontDistributionId`].OutputValue' \
-        --output text)
-
-    if [ -z "$DISTRIBUTION_ID" ]; then
-        echo -e "${RED}⚠️  Could not retrieve CloudFront distribution ID${NC}"
-    else
-        aws cloudfront create-invalidation \
-            --distribution-id "${DISTRIBUTION_ID}" \
-            --paths "/*" \
-            --region "${REGION}" \
-            --output table
+    # Get command name
+    local cmd="${args[0]:-help}"
+    
+    # Shift to remove command from args
+    if [[ ${#args[@]} -gt 0 ]]; then
+        args=("${args[@]:1}")
     fi
-
-    echo ""
-    echo -e "${GREEN}✅ Infrastructure deployment complete!${NC}"
-    echo -e "${YELLOW}Note: DNS and CDN changes may take 1-5 minutes to propagate globally.${NC}"
+    
+    # Parse remaining arguments
+    if [[ ${#args[@]} -gt 0 ]]; then
+        load_cli_args "${args[@]}"
+    fi
+    
+    # Load configuration file if it exists
+    if [[ -f ".deployrc" ]]; then
+        load_config_file ".deployrc"
+    fi
+    
+    # Load environment variables
+    load_env_config
+    
+    # Handle special commands
+    case "$cmd" in
+        -h|--help|help)
+            show_help
+            return $EXIT_SUCCESS
+            ;;
+        
+        -v|--version|version)
+            echo "$APP_NAME v$APP_VERSION"
+            return $EXIT_SUCCESS
+            ;;
+    esac
+    
+    # Execute command
+    execute_command "$cmd" "${args[@]}"
 }
 
-# Function to update existing website
-update() {
-    echo -e "${BLUE}📦 Updating website files...${NC}"
-    echo -e "${BLUE}Stack: ${STACK_NAME}${NC}"
-    echo ""
-
-    # Verify CloudFormation stack exists
-    if ! aws cloudformation describe-stacks \
-        --stack-name "${STACK_NAME}" \
-        --region "${REGION}" \
-        --output text &>/dev/null; then
-        echo -e "${RED}❌ CloudFormation stack '${STACK_NAME}' not found${NC}"
-        echo -e "${YELLOW}Did you deploy with ./deploy.sh deploy first?${NC}"
-        exit 1
-    fi
-
-    # Get S3 bucket name from CloudFormation outputs
-    BUCKET_NAME=$(aws cloudformation describe-stacks \
-        --stack-name "${STACK_NAME}" \
-        --region "${REGION}" \
-        --query 'Stacks[0].Outputs[?OutputKey==`S3BucketName`].OutputValue' \
-        --output text)
-
-    if [ -z "$BUCKET_NAME" ]; then
-        echo -e "${RED}❌ Could not retrieve S3 bucket name from CloudFormation${NC}"
-        exit 1
-    fi
-
-    echo -e "${BLUE}Bucket: ${BUCKET_NAME}${NC}"
-    echo ""
-
-    # Sync files to S3
-    echo -e "${YELLOW}📤 Uploading files to S3...${NC}"
-    aws s3 sync . "s3://${BUCKET_NAME}/" \
-        --exclude "CloudFormation/*" \
-        --exclude "*.sh" \
-        --exclude ".git/*" \
-        --exclude ".github/*" \
-        --exclude ".specify/*" \
-        --exclude ".vscode/*" \
-        --exclude ".cel/*" \
-        --exclude ".gitignore" \
-        --exclude "Readme.md" \
-        --exclude ".DS_Store" \
-        --delete
-
-    echo ""
-    echo -e "${BLUE}🔄 Invalidating CloudFront cache...${NC}"
-
-    # Get CloudFront distribution ID from CloudFormation outputs
-    DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
-        --stack-name "${STACK_NAME}" \
-        --region "${REGION}" \
-        --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontDistributionId`].OutputValue' \
-        --output text)
-
-    WEBSITE_URL=$(aws cloudformation describe-stacks \
-        --stack-name "${STACK_NAME}" \
-        --region "${REGION}" \
-        --query 'Stacks[0].Outputs[?OutputKey==`WebsiteUrl`].OutputValue' \
-        --output text)
-
-    if [ -z "$DISTRIBUTION_ID" ]; then
-        echo -e "${RED}⚠️  Could not retrieve CloudFront distribution ID${NC}"
-    else
-        aws cloudfront create-invalidation \
-            --distribution-id "${DISTRIBUTION_ID}" \
-            --paths "/*" \
-            --region "${REGION}" \
-            --output table
-    fi
-
-    echo ""
-    echo -e "${GREEN}✅ Website updated successfully!${NC}"
-    if [ -n "$WEBSITE_URL" ]; then
-        echo -e "${GREEN}URL: ${WEBSITE_URL}${NC}"
-    fi
-    echo -e "${YELLOW}Note: Changes may take 1-5 minutes to propagate globally.${NC}"
-}
-
-# Main logic
-case "$COMMAND" in
-    deploy)
-        deploy
-        ;;
-    update)
-        update
-        ;;
-    *)
-        echo -e "${RED}❌ Invalid command: $COMMAND${NC}"
-        usage
-        ;;
-esac
+# Ensure main is called with all arguments
+main "$@"
+exit $?
