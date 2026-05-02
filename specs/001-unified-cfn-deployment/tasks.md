@@ -184,7 +184,7 @@ spec: "aws-static-website-cfn-deployment.md"
   - Implement: State persistence functions (`save_deployment_state()`, `load_deployment_state()`)
   - File: [lib/state.sh](../../../lib/state.sh) (new)
 
-- [ ] **T041** **[SECURITY CRITICAL]** Integrate secrets scanning into deployment pipeline
+- [X] **T041** **[SECURITY CRITICAL]** Integrate secrets scanning into deployment pipeline
   - Implement: Call `validate_files_for_secrets()` before any S3 upload (Phase 3 deploy/update)
   - Implement: Reject upload if secret patterns detected; display actionable error message
   - File: [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh) (update), [lib/update-cmd.sh](../../../lib/update-cmd.sh) (update)
@@ -210,13 +210,13 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### T014-T016: Deploy Command Framework
 
-- [ ] **T014** **[P]** Implement `deploy` subcommand argument parsing and configuration loading
+- [X] **T014** **[P]** Implement `deploy` subcommand argument parsing and configuration loading
   - Parse and validate: --domain, --subdomain, --region (default: us-east-1), --source-dir (default: ./), --aws-profile, --dry-run
   - Load configuration from .deployrc (if exists) and merge with CLI arguments
   - Validate parameter combinations (domain format, subdomain format, region availability)
   - File: [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh) (new)
 
-- [ ] **T015** **[P]** Implement pre-flight validation for deploy command
+- [X] **T015** **[P]** Implement pre-flight validation for deploy command
   - Validate: AWS credentials valid, IAM permissions sufficient (s3:*, cloudformation:*, cloudfront:*, route53:*, acm:*)
   - Validate: Domain name format (RFC 1123 compliance), subdomain format
   - Validate: Source directory exists and is readable
@@ -226,7 +226,7 @@ spec: "aws-static-website-cfn-deployment.md"
   - Report: Clear error messages with actionable suggestions for each validation failure
   - File: [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh), [lib/validation.sh](../../../lib/validation.sh)
 
-- [ ] **T016** **[P]** Implement stack naming and existence check logic
+- [X] **T016** **[P]** Implement stack naming and existence check logic
   - Generate predictable stack name: `{app-name}-website-{subdomain}-{domain}` (normalized, lowercase)
   - Query CloudFormation for existing stack with this name
   - If stack exists: determine mode (UPDATE_STACK) and verify parameters match
@@ -236,14 +236,14 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### T017-T019: CloudFormation Stack Provisioning
 
-- [ ] **T017** Implement CloudFormation template generation/loading for static website infrastructure
+- [X] **T017** Implement CloudFormation template generation/loading for static website infrastructure
   - Load existing template from [CloudFormation/s3-static-website.yaml](../../../CloudFormation/s3-static-website.yaml)
   - Validate template YAML syntax and CloudFormation compatibility
   - Verify template creates required resources: S3 bucket, CloudFront distribution, Route53 alias, ACM certificate, Origin Access Identity
   - Document template parameters: DomainName, SubdomainName, Environment, EnableLogging
   - File: [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh) (template loading), [CloudFormation/s3-static-website.yaml](../../../CloudFormation/s3-static-website.yaml) (verify/enhance)
 
-- [ ] **T018** Implement CloudFormation stack creation workflow
+- [X] **T018** Implement CloudFormation stack creation workflow
   - Generate CloudFormation parameters from validated configuration (domain, subdomain, region, optional: ACM cert ARN)
   - Call `cfn_create_stack()` with generated parameters
   - If dry-run mode: validate parameters without executing create
@@ -252,7 +252,7 @@ spec: "aws-static-website-cfn-deployment.md"
   - Handle failures: Report CloudFormation events explaining why stack creation failed
   - File: [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh), [lib/cloudformation.sh](../../../lib/cloudformation.sh)
 
-- [ ] **T019** Implement CloudFormation stack update workflow for existing stacks
+- [X] **T019** Implement CloudFormation stack update workflow for existing stacks
   - Detect when stack already exists (CloudFormation UPDATE vs CREATE)
   - If parameters differ: warn user and require confirmation (prevent accidental infrastructure changes)
   - If parameters match: proceed with UPDATE (should report "no updates")
@@ -262,7 +262,7 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### T020-T022: File Upload & Version Management
 
-- [ ] **T020** **[P]** Implement initial file inventory and upload preparation
+- [X] **T020** **[P]** Implement initial file inventory and upload preparation
   - Scan source directory using include/exclude patterns
   - Calculate SHA256 hash for each file
   - Generate upload manifest (file path, hash, size, content-type)
@@ -270,7 +270,7 @@ spec: "aws-static-website-cfn-deployment.md"
   - If dry-run mode: report which files WOULD be uploaded (don't upload)
   - File: [lib/file-operations.sh](../../../lib/file-operations.sh), [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh)
 
-- [ ] **T021** Implement parallel file upload to S3 with retry logic and resume capability
+- [X] **T021** Implement parallel file upload to S3 with retry logic and resume capability
   - Upload files in batches of 5 concurrent uploads (balance throughput vs. connection limits)
   - Set appropriate headers per file type:
     - HTML: `Cache-Control: max-age=60` (60 seconds, fast updates)
@@ -284,14 +284,14 @@ spec: "aws-static-website-cfn-deployment.md"
   - Handle upload failures: Report which files failed, suggest retry with `--retry-uploads`
   - File: [lib/s3.sh](../../../lib/s3.sh), [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh)
 
-- [ ] **T021a** Implement network failure recovery and upload resumption
+- [X] **T021a** Implement network failure recovery and upload resumption
   - Implement checkpoint system: `.deploy/last-upload-state.json` tracks successfully uploaded files (path, s3_key, etag, timestamp)
   - On deployment interruption: record which files uploaded before failure
   - On next run: Load checkpoint; skip files already uploaded (verify etag matches)
   - Implement rollback on verification failure: Delete uploaded files if manifest verification fails (all-or-nothing semantics)
   - File: [lib/s3.sh](../../../lib/s3.sh), [lib/state.sh](../../../lib/state.sh) (update)
 
-- [ ] **T022** Implement version snapshot creation for initial deployment
+- [X] **T022** Implement version snapshot creation for initial deployment
   - Create version manifest JSON with: version_id (timestamp YYYYMMDD-HHMMSS), files[] (path, hash, size, s3_etag), domain, subdomain
   - Store version manifest in two locations:
     - S3: `s3://{bucket}/versions/{version_id}.json`
@@ -302,7 +302,7 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### T023-T025: Cache Invalidation & Health Checks
 
-- [ ] **T023** **[P]** Implement CloudFront cache invalidation for initial deployment
+- [X] **T023** **[P]** Implement CloudFront cache invalidation for initial deployment
   - Generate invalidation batch request: paths for all uploaded files (or `/*` if >100 files)
   - Submit invalidation request to CloudFront API
   - Poll invalidation status every 30 seconds (timeout: 5 minutes)
@@ -310,7 +310,7 @@ spec: "aws-static-website-cfn-deployment.md"
   - Handle failures: Log warning but don't fail deployment (cache will eventually expire)
   - File: [lib/cloudfront.sh](../../../lib/cloudfront.sh), [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh)
 
-- [ ] **T024** **[P]** Implement post-deployment health checks (verify all resources working)
+- [X] **T024** **[P]** Implement post-deployment health checks (verify all resources working)
   - HTTP/HTTPS health check: GET https://www.{domain}/ → verify 200 status, valid TLS cert
   - DNS health check: resolve {domain} → verify resolves to CloudFront domain
   - Asset health checks: verify 3-5 key assets load (index.html, main.css, main.js, key image)
@@ -319,7 +319,7 @@ spec: "aws-static-website-cfn-deployment.md"
   - If dry-run mode: skip health checks (they test actual resources)
   - File: [lib/validation.sh](../../../lib/validation.sh), [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh)
 
-- [ ] **T025** **[P]** Implement deployment completion reporting and state persistence
+- [X] **T025** **[P]** Implement deployment completion reporting and state persistence
   - Generate human-readable deployment summary:
     ```
     ✓ Infrastructure Deployment Complete
@@ -336,13 +336,13 @@ spec: "aws-static-website-cfn-deployment.md"
   - Provide JSON output option (--json flag) for machine consumption
   - File: [lib/deploy-cmd.sh](../../../lib/deploy-cmd.sh), [lib/state.sh](../../../lib/state.sh)
 
-- [ ] **T031a** **PERFORMANCE DESIGN** Verify parallel upload design meets <10 minute deploy target
+- [X] **T031a** **PERFORMANCE DESIGN** Verify parallel upload design meets <10 minute deploy target
   - Document parallel batch size: 5 concurrent uploads (justification: AWS throttle limits, typical latency ~1s per file)
   - Calculate typical deployment time: 50 files × 1s/file ÷ 5 parallel = 10s upload + 3m CF creation + 2m stack → ~6 min typical
   - Document optimization trade-offs: Larger batches (10) vs. connection stability
   - File: [lib/s3.sh](../../../lib/s3.sh) (add design comments), [PERFORMANCE.md](../../../PERFORMANCE.md) (new)
 
-- [ ] **T036** Implement dry-run mode for deploy command (validate without AWS changes)
+- [X] **T036** Implement dry-run mode for deploy command (validate without AWS changes)
   - Flag: `./deploy.sh deploy --dry-run --domain example.com --subdomain www`
   - Behavior: Execute all validation steps (credentials, domain format, file existence, IAM permissions)
   - Report: Print what WOULD be created (CloudFormation stack resources, S3 files to upload) without creating anything
@@ -352,7 +352,7 @@ spec: "aws-static-website-cfn-deployment.md"
 
 ### Tests for User Story 1 (Integration/E2E)
 
-- [ ] **T026** **[P]** [US1] Integration test: Deploy command creates all required resources
+- [X] **T026** **[P]** [US1] Integration test: Deploy command creates all required resources
   - Test file: [tests/integration/test-us1-deploy-resources.sh](../../../tests/integration/test-us1-deploy-resources.sh) (new)
   - Verify: CloudFormation stack created with correct name
   - Verify: S3 bucket exists with versioning enabled
@@ -360,7 +360,7 @@ spec: "aws-static-website-cfn-deployment.md"
   - Verify: Route53 alias record points to CloudFront
   - Verify: ACM certificate provisioned for custom domain
 
-- [ ] **T027** **[P]** [US1] Integration test: Initial files deployed and accessible via CloudFront
+- [X] **T027** **[P]** [US1] Integration test: Initial files deployed and accessible via CloudFront
   - Test file: [tests/integration/test-us1-file-upload.sh](../../../tests/integration/test-us1-file-upload.sh) (new)
   - Verify: All files from source directory uploaded to S3
   - Verify: Files accessible via CloudFront distribution
@@ -388,14 +388,14 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### T028-T030: Update Command Framework
 
-- [ ] **T028** **[P]** Implement `update` subcommand argument parsing and state loading
+- [X] **T028** **[P]** Implement `update` subcommand argument parsing and state loading
   - Parse optional arguments: --subdomain, --source-dir, --dry-run
   - Load saved deployment state from `.deploy/state.json` (domain, subdomain, region, S3 bucket, CF distribution)
   - If no saved state exists: prompt user to run deploy command first
   - Validate: Source directory exists, target stack exists in CloudFormation
   - File: [lib/update-cmd.sh](../../../lib/update-cmd.sh) (new)
 
-- [ ] **T029** **[P]** Implement file change detection (diff between local files and S3 objects)
+- [X] **T029** **[P]** Implement file change detection (diff between local files and S3 objects)
   - Load latest deployment version manifest from `.deploy/versions/{latest_version}.json`
   - Scan current local directory with include/exclude patterns
   - Calculate SHA256 hash for each local file
@@ -405,7 +405,7 @@ spec: "aws-static-website-cfn-deployment.md"
   - If no changes detected: report "No changes detected, skipping upload" and exit cleanly
   - File: [lib/update-cmd.sh](../../../lib/update-cmd.sh), [lib/file-operations.sh](../../../lib/file-operations.sh)
 
-- [ ] **T030** **[P]** Implement selective file upload for changed files only
+- [X] **T030** **[P]** Implement selective file upload for changed files only
   - Upload only files identified as changed in T029
   - Reuse parallel upload logic from T021 (batches of 5 concurrent uploads, retry logic)
   - Verify: Upload success via etag comparison
@@ -415,7 +415,7 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### T031-T033: CloudFront Invalidation & Version Management
 
-- [ ] **T031** Implement selective CloudFront cache invalidation
+- [X] **T031** Implement selective CloudFront cache invalidation
   - Generate invalidation paths: only for changed files identified in T029
   - If >100 files changed: use `/*` (simpler invalidation)
   - If ≤100 files changed: list specific paths (more efficient)
@@ -424,14 +424,14 @@ spec: "aws-static-website-cfn-deployment.md"
   - Report: Invalidation completed, cache will refresh in ~1-2 minutes
   - File: [lib/cloudfront.sh](../../../lib/cloudfront.sh), [lib/update-cmd.sh](../../../lib/update-cmd.sh)
 
-- [ ] **T032** **[P]** Implement version snapshot creation for content updates
+- [X] **T032** **[P]** Implement version snapshot creation for content updates
   - Generate new version manifest with: version_id (incremented timestamp), all current files (local state), changed file hashes
   - Store in two locations: S3 and local `.deploy/versions/`
   - Create deployment record: `.deploy/deployments/{YYYY-MM-DD}.log` with operation type (update), changed files count, timestamp
   - Update `.deploy/state.json` to reflect new current version
   - File: [lib/versioning.sh](../../../lib/versioning.sh), [lib/update-cmd.sh](../../../lib/update-cmd.sh)
 
-- [ ] **T033** **[P]** Implement update completion reporting
+- [X] **T033** **[P]** Implement update completion reporting
   - Generate human-readable update summary:
     ```
     ✓ Content Update Complete
@@ -447,7 +447,7 @@ spec: "aws-static-website-cfn-deployment.md"
 
 #### T034-T036: Health Checks & Rollback Preparation
 
-- [ ] **T034** **[P]** Implement post-update health checks (spot-check key files)
+- [X] **T034** **[P]** Implement post-update health checks (spot-check key files)
   - HTTP health check: GET https://www.{domain}/ → verify 200 status
   - Asset health checks: verify 2-3 key changed files are accessible via CloudFront
   - Measure latencies: TTFB, page load time
@@ -455,12 +455,12 @@ spec: "aws-static-website-cfn-deployment.md"
   - If dry-run mode: skip health checks
   - File: [lib/validation.sh](../../../lib/validation.sh), [lib/update-cmd.sh](../../../lib/update-cmd.sh)
 
-- [ ] **T035** **[P]** Implement rollback preparation (preserve current version for quick rollback)
+- [X] **T035** **[P]** Implement rollback preparation (preserve current version for quick rollback)
   - Ensure current version manifest stored in S3 and locally
   - Verify version manifests include complete file list (needed for T037 rollback)
   - File: [lib/versioning.sh](../../../lib/versioning.sh), [lib/update-cmd.sh](../../../lib/update-cmd.sh)
 
-- [ ] **T036** Implement idempotency for update command
+- [X] **T036** Implement idempotency for update command
   - Re-run update with no file changes → detect no changes, report "Up to date", exit 0
   - Re-run update after partial upload failure → resume upload from where it failed, complete successfully
   - Re-run update after CloudFront invalidation failure → retry invalidation
@@ -469,14 +469,14 @@ spec: "aws-static-website-cfn-deployment.md"
 
 ### Tests for User Story 2 (Integration/E2E)
 
-- [ ] **T037** **[P]** [US2] Integration test: Update command detects and uploads changed files
+- [X] **T037** **[P]** [US2] Integration test: Update command detects and uploads changed files
   - Test file: [tests/integration/test-us2-update-files.sh](../../../tests/integration/test-us2-update-files.sh) (new)
   - Verify: Only changed files uploaded (not all files)
   - Verify: File content in S3 matches local changes
   - Verify: Update completes in <5 minutes
   - Verify: CloudFront cache invalidated
 
-- [ ] **T038** **[P]** [US2] Integration test: Update command is idempotent
+- [X] **T038** **[P]** [US2] Integration test: Update command is idempotent
   - Test file: [tests/integration/test-us2-idempotency.sh](../../../tests/integration/test-us2-idempotency.sh) (new)
   - Verify: Re-running update with no changes = no uploads
   - Verify: Re-running update after partial failure = resumes successfully

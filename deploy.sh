@@ -44,19 +44,15 @@ source "$LIB_DIR/file-operations.sh" || { echo "FATAL: Could not source file-ope
 source "$LIB_DIR/versioning.sh" || { echo "FATAL: Could not source versioning.sh"; exit 1; }
 source "$LIB_DIR/validation.sh" || { echo "FATAL: Could not source validation.sh"; exit 1; }
 source "$LIB_DIR/state.sh" || { echo "FATAL: Could not source state.sh"; exit 1; }
+source "$LIB_DIR/deploy-cmd.sh" || { echo "FATAL: Could not source deploy-cmd.sh"; exit 1; }
+source "$LIB_DIR/update-cmd.sh" || { echo "FATAL: Could not source update-cmd.sh"; exit 1; }
 
 # Set log level from environment or default to INFO
 export LOG_LEVEL="${LOG_LEVEL:-INFO}"
 export DEBUG_MODE=0
 
-# Placeholder command functions (to be implemented in future phases)
-cmd_deploy() {
-    info "Deploy command - Phase 3 implementation"
-}
-
-cmd_update() {
-    info "Update command - Phase 4 implementation"
-}
+# Deploy and update command functions are now defined in deploy-cmd.sh and update-cmd.sh
+# The cmd_deploy and cmd_update functions are already sourced above
 
 cmd_rollback() {
     info "Rollback command - Phase 6 implementation"
