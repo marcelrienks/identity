@@ -1,6 +1,6 @@
 # Quick Reference
 
-Essential commands — for details see [docs/reference.md](docs/reference.md).
+Essential commands — for details see [reference.md](reference.md).
 
 ---
 
@@ -51,12 +51,10 @@ Essential commands — for details see [docs/reference.md](docs/reference.md).
 │   └── versions/                ← Cached copies (for speed)
 ├── docs/                        ← Documentation
 │   ├── guide.md                 ← User guide
+│   ├── quickref.md              ← Quick reference
 │   ├── reference.md             ← Technical reference
 │   ├── architecture.md          ← System design
-│   ├── deployments.md           ← Manifest storage
-│   ├── operations.md            ← AWS operations
-│   ├── performance.md           ← Timing & metrics
-│   └── security.md              ← Security best practices
+│   └── deployments.md           ← Manifest storage
 ├── specs/                       ← Feature specifications
 │   └── 001-unified-cfn-deployment/
 │       ├── spec.md              ← Requirements
@@ -89,28 +87,10 @@ Essential commands — for details see [docs/reference.md](docs/reference.md).
 
 | Doc | Purpose |
 |---|---|
-| [README.md](README.md) | Project overview |
-| [docs/guide.md](docs/guide.md) | Workflows & configuration |
-| [docs/reference.md](docs/reference.md) | Commands, operations, performance, security |
-| [docs/architecture.md](docs/architecture.md) | System design & decisions |
-| [docs/deployments.md](docs/deployments.md) | Manifest storage & multi-machine |
+| [../README.md](../README.md) | Project overview |
+| [guide.md](guide.md) | Workflows & configuration |
+| [reference.md](reference.md) | Commands, operations, performance, security |
+| [architecture.md](architecture.md) | System design & decisions |
+| [deployments.md](deployments.md) | Manifest storage & multi-machine |
 
-See [docs/reference.md](docs/reference.md) for detailed command reference and troubleshooting.
-
----
-
-## Common Questions
-
-| Q | A |
-|---|---|
-| How do I deploy? | `./deploy.sh deploy --domain marcelrienks.com` |
-| Update after changes? | `./deploy.sh update` |
-| Undo a deployment? | `./deploy.sh rollback --version 1.0.0` |
-| See manifests? | `deployments/1.1.0.json` |
-| Deploy from another machine? | Clone → manifests in git → `./deploy.sh update` |
-| How long? | Deploy: 6-8 min, Update: 2-4 min, Live: 1-2 min |
-| Credentials? | `aws configure` or `export AWS_PROFILE=my-profile` |
-| Bash version? | Need 4.0+. macOS: `brew install bash` |
-| Cache not updating? | Takes 1-2 minutes. Force refresh: `Cmd+Shift+R` |
-
-See [docs/reference.md](docs/reference.md) for full troubleshooting guide.
+See [reference.md](reference.md) for detailed command reference and troubleshooting.
