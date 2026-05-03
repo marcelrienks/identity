@@ -69,11 +69,25 @@ Your deployment creates:
 ./deploy.sh update
 
 # What happens:
+# ✓ Bumps version (default: minor, e.g., 1.1.0 → 1.2.0)
 # ✓ Compares local files with S3
 # ✓ Uploads ONLY modified files (faster)
 # ✓ Invalidates CloudFront cache
+# ✓ Creates versioned manifest for rollback
 # ✓ Changes live in 1-2 minutes
 ```
+
+**Version Bumping:**
+```bash
+./deploy.sh update                    # Minor bump (default): 1.1.0 → 1.2.0
+./deploy.sh update --version major    # Major bump: 1.1.0 → 2.0.0
+./deploy.sh update --version minor    # Explicit minor: 1.1.0 → 1.2.0
+```
+
+**Why version bumping?** Each `update` automatically creates a new semantic version manifest (`1.2.0.json`, `1.3.0.json`, etc.) in `deployments/`, tracked in git. This enables:
+- Rollback to any specific version: `./deploy.sh rollback --version 1.1.0`
+- Multi-machine deployments (manifests in git)
+- Clear version history and audit trail
 
 ### Rollback if Needed
 

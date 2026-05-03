@@ -8,7 +8,8 @@ Essential commands — for details see [reference.md](reference.md).
 
 ```bash
 ./deploy.sh deploy --domain marcelrienks.com          # Deploy everything
-./deploy.sh update                                     # Update changed files
+./deploy.sh update                                     # Update + bump minor (1.1.0 → 1.2.0)
+./deploy.sh update --version major                     # Update + bump major (1.1.0 → 2.0.0)
 ./deploy.sh versions list                              # View history
 ./deploy.sh rollback --version 1.0.0                   # Rollback
 ./deploy.sh validate --dry-run                         # Test (no changes)

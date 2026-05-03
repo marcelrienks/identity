@@ -63,12 +63,14 @@ Professional portfolio website for Marcel Rienks showcasing 20+ years IT Service
 
 ### 2. Content Update (2-4 min)
 ```
-./deploy.sh update
+./deploy.sh update [--version major|minor]
+  ↓ Bump semantic version (default: minor)
   ↓ Load previous manifest from deployments/VERSION.json
   ↓ Hash current files (SHA256)
   ↓ Diff vs S3 → detect changes only
   ↓ Upload modified files (30-60s typical, 2-5 files)
   ↓ CloudFront selective invalidation (1-2 min)
+  ↓ Create versioned manifest (e.g., 1.2.0.json)
   ↓ Health checks (20s)
   ✓ Live in 1-2 min globally
 ```
@@ -268,7 +270,8 @@ exclude_patterns:
 | Command | Purpose | Time |
 |---------|---------|------|
 | `./deploy.sh deploy --domain X` | Full deployment (create infrastructure + upload files) | 6-8 min |
-| `./deploy.sh update` | Upload changed files only | 2-4 min |
+| `./deploy.sh update` | Bump minor + upload changed files (default: 1.1.0 → 1.2.0) | 2-4 min |
+| `./deploy.sh update --version major` | Bump major + upload changed files (1.1.0 → 2.0.0) | 2-4 min |
 | `./deploy.sh rollback --version X` | Restore previous version | 2-3 min |
 | `./deploy.sh versions list` | Show version history | <5s |
 | `./deploy.sh validate --dry-run` | Pre-flight check without changes | 30s |

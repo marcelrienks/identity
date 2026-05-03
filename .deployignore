@@ -1,0 +1,49 @@
+# Deployment ignore list - exclude from S3 upload
+
+# Development & tooling
+.git/
+.github/
+.specify/
+.cel/
+.vscode/
+node_modules/
+spec/
+
+# Documentation (not for production)
+docs/
+specs/
+README.md
+*.md
+
+# Environment & secrets (never deploy)
+.env*
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Temporary & cache
+*.log
+*.tmp
+*.cache
+.deploy/
+logs/
+
+# Build outputs
+dist/
+build/
+
+# Development scripts
+deploy.sh
+lib/
+tests/
+CloudFormation/
+.deployrc*
+*.schema.json

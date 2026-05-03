@@ -178,5 +178,79 @@ get_previous_version_id() {
     ls -1r "$local_versions_dir"/*.json 2>/dev/null | sed -n '2p' | xargs basename -s .json
 }
 
+# Bump semantic version (major or minor)
+bump_semantic_version() {
+    local current_version="$1"
+    local bump_type="${2:-minor}"
+    
+    # Parse version (X.Y.Z format)
+    local major minor patch
+    IFS='.' read -r major minor patch <<< "$current_version"
+    
+    case "$bump_type" in
+        major)
+            ((major++))
+            minor=0
+            patch=0
+            ;;
+        minor)
+            ((minor++))
+            patch=0
+            ;;
+        patch)
+            ((patch++))
+            ;;
+        *)
+            error "Invalid bump type: $bump_type (must be major, minor, or patch)"
+            return $EXIT_ERROR
+            ;;
+    esac
+    
+    echo "${major}.${minor}.${patch}"
+}
+
+# Create next version manifest by copying from latest and updating version ID
+create_next_version_manifest() {
+    local bump_type="${1:-minor}"
+    local local_versions_dir="${2:-deployments}"
+    
+    # Get latest version manifest
+    local latest_manifest="$local_versions_dir/$(get_latest_version_id "$local_versions_dir").json"
+    
+    if [[ ! -f "$latest_manifest" ]]; then
+        error "No existing version manifest found"
+        return $EXIT_ERROR
+    fi
+    
+    # Extract current version
+    local current_version
+    current_version=$(jq -r '.version_id' "$latest_manifest")
+    
+    # Bump version
+    local new_version
+    new_version=$(bump_semantic_version "$current_version" "$bump_type")
+    
+    if [[ $? -ne 0 ]]; then
+        return $EXIT_ERROR
+    fi
+    
+    # Copy manifest and update version + timestamp
+    local new_manifest_file="$local_versions_dir/${new_version}.json"
+    local timestamp
+    timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+    
+    jq ".version_id = \"$new_version\" | .timestamp = \"$timestamp\"" "$latest_manifest" > "$new_manifest_file"
+    
+    if [[ $? -eq 0 ]]; then
+        info "Created version manifest: $new_version"
+        echo "$new_version"
+        return $EXIT_SUCCESS
+    else
+        error "Failed to create version manifest"
+        return $EXIT_ERROR
+    fi
+}
+
 export -f generate_version_id create_version_manifest store_version_manifest
 export -f list_versions get_version_manifest get_latest_version_id get_previous_version_id
+export -f bump_semantic_version create_next_version_manifest

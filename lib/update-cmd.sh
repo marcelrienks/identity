@@ -19,6 +19,7 @@ parse_update_arguments() {
     args[source_dir]="./"
     args[dry_run]=0
     args[verbose]=0
+    args[version]="minor"
     
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
@@ -29,6 +30,10 @@ parse_update_arguments() {
                 ;;
             --source-dir)
                 args[source_dir]="$2"
+                shift 2
+                ;;
+            --version)
+                args[version]="$2"
                 shift 2
                 ;;
             --dry-run)
@@ -82,10 +87,11 @@ parse_update_arguments() {
     export UPDATE_STACK_NAME="$stack_name"
     export UPDATE_SOURCE_DIR="${args[source_dir]}"
     export UPDATE_DRY_RUN="${args[dry_run]}"
+    export UPDATE_VERSION_BUMP="${args[version]}"
     
     if [[ "${args[verbose]}" -eq 1 ]]; then
         export LOG_LEVEL="DEBUG"
-        debug "Update arguments parsed: domain=$domain, subdomain=$subdomain, source_dir=${args[source_dir]}"
+        debug "Update arguments parsed: domain=$domain, subdomain=$subdomain, source_dir=${args[source_dir]}, version=${args[version]}"
     fi
     
     return 0
@@ -390,9 +396,7 @@ invalidate_cloudfront_cache() {
 # Create new version snapshot for content updates
 create_update_version_snapshot() {
     local s3_bucket="$1"
-    
-    # Generate new version ID
-    local version_id=$(date +%Y%m%d-%H%M%S)
+    local version_id="${2:-$(date +%Y%m%d-%H%M%S)}"
     
     info "Creating version snapshot: $version_id"
     
@@ -587,6 +591,17 @@ cmd_update() {
         return 1
     fi
     
+    # Bump version (major or minor, default minor)
+    local bump_type="${UPDATE_VERSION_BUMP:-minor}"
+    local new_version
+    new_version=$(create_next_version_manifest "$bump_type" "deployments")
+    if [[ $? -ne 0 ]]; then
+        error "Failed to bump version"
+        return 1
+    fi
+    
+    info "Version bumped: $new_version"
+    
     # Detect file changes
     if ! detect_file_changes "$UPDATE_SOURCE_DIR" "$UPDATE_S3_BUCKET"; then
         # No changes detected (this is a successful case, not an error)
@@ -613,7 +628,7 @@ cmd_update() {
     fi
     
     # Create version snapshot
-    if ! create_update_version_snapshot "$UPDATE_S3_BUCKET"; then
+    if ! create_update_version_snapshot "$UPDATE_S3_BUCKET" "$new_version"; then
         error "Version snapshot creation failed"
         return 1
     fi

@@ -80,10 +80,18 @@ Deploy to AWS in one command using the unified deployment script.
 ```
 
 **What happens:**
+- ✓ Bumps version (default: minor, e.g., 1.1.0 → 1.2.0)
 - ✓ Detects only changed files
 - ✓ Uploads changed files to S3
 - ✓ Invalidates CloudFront cache
+- ✓ Creates versioned manifest for rollback
 - **Time:** ~2-4 minutes, changes live in 1-2 min
+
+**Version bumping:**
+```bash
+./deploy.sh update                    # Minor bump: 1.1.0 → 1.2.0
+./deploy.sh update --version major    # Major bump: 1.1.0 → 2.0.0
+```
 
 ### Rollback If Needed
 

@@ -16,8 +16,14 @@ Technical reference for operations, performance, security, and troubleshooting.
   --region us-east-1 \
   --source-dir ./website
 
-# Content update
+# Content update (bumps minor version: 1.1.0 → 1.2.0)
 ./deploy.sh update
+
+# Content update with major version bump (1.1.0 → 2.0.0)
+./deploy.sh update --version major
+
+# Content update with explicit minor bump (1.1.0 → 1.2.0)
+./deploy.sh update --version minor
 
 # Dry-run (test without changes)
 ./deploy.sh deploy --dry-run
@@ -40,12 +46,35 @@ Technical reference for operations, performance, security, and troubleshooting.
 ./deploy.sh versions --show 20260502-143022
 
 # Rollback to version
-./deploy.sh rollback --version 20260502-143022
-./deploy.sh rollback --version 20260502-143022 --confirm
+./deploy.sh rollback --version 1.0.0
+./deploy.sh rollback --version 1.0.0 --confirm
 
 # Rollback to previous
 ./deploy.sh rollback
 ```
+
+### Update Command with Version Bumping
+
+```bash
+# Update with automatic minor version bump (default)
+# Bumps from 1.1.0 → 1.2.0
+./deploy.sh update
+
+# Update with major version bump
+# Bumps from 1.1.0 → 2.0.0
+./deploy.sh update --version major
+
+# Update with explicit minor version bump
+# Bumps from 1.1.0 → 1.2.0
+./deploy.sh update --version minor
+```
+
+**Version Bumping Behavior:**
+- Version increments use semantic versioning (MAJOR.MINOR.PATCH)
+- Default: `--version minor` if not specified
+- Each `update` creates new semantic version manifest in `deployments/`
+- Manifests tracked in git, enabling multi-machine deployments
+- Version history used for rollbacks via `./deploy.sh rollback --version X.Y.Z`
 
 ### Validation
 
