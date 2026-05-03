@@ -1,6 +1,6 @@
 # My Portfolio Website
 
-A modern, responsive portfolio website built with Bootstrap and deployed on AWS using Terraform infrastructure as code. This site showcases IT Service Delivery Management and technology expertise in a professional, high-performance format.
+A modern, responsive portfolio website built with Bootstrap and deployed on AWS using CloudFormation infrastructure as code. This site showcases IT Service Delivery Management and technology expertise in a professional, high-performance format.
 
 [![AWS](https://img.shields.io/badge/AWS-Cloud%20Hosting-orange?logo=amazon-aws)](https://aws.amazon.com/)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.3-7952B3?logo=bootstrap)](https://getbootstrap.com/)
@@ -95,10 +95,24 @@ Deploy to AWS in one command using the unified deployment script.
 
 ## 📖 Full Documentation
 
-- **[docs/guide.md](docs/guide.md)** — Complete user guide with examples, workflows, configuration
+- **[docs/guide.md](docs/guide.md)** — User guide with workflows, configuration, examples
 - **[docs/reference.md](docs/reference.md)** — Technical reference: operations, performance, security, troubleshooting
+- **[docs/architecture.md](docs/architecture.md)** — System design, deployment flow, state management
+- **[docs/deployments.md](docs/deployments.md)** — Version manifest storage and multi-machine deployments
 
 See `./deploy.sh help` for all available commands.
+
+---
+
+## Project Status
+
+✅ **Deployment System** — Fully operational  
+✅ **Version Manifests** — Tracked in `deployments/` for team access  
+✅ **Multi-Machine Ready** — Clone → deploy from any machine  
+✅ **CI/CD Ready** — Manifests available for automation  
+✅ **Website Live** — [marcelrienks.com](https://marcelrienks.com)  
+
+Latest version: **1.1.0** (7 animated job titles, deployed May 3, 2026)
 
 ---
 
