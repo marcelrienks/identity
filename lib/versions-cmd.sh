@@ -117,7 +117,7 @@ list_versions() {
     local limit=${1:-20}
     local output_json=${2:-0}
     
-    local versions_dir=".deploy/versions"
+    local versions_dir="deployments"
     
     if [[ ! -d "$versions_dir" ]]; then
         if (( output_json )); then
@@ -254,9 +254,9 @@ show_version_details() {
     local version_id="$1"
     local output_json=${2:-0}
     
-    local version_file=".deploy/versions/${version_id}.json"
+    local version_file="deployments/${version_id}.json"
     if [[ ! -f "$version_file" ]]; then
-        version_file=".deploy/versions/multi-${version_id}.json"
+        version_file="deployments/multi-${version_id}.json"
     fi
     
     if [[ ! -f "$version_file" ]]; then
@@ -311,7 +311,7 @@ show_version_details() {
 # ============================================================================
 
 get_all_versions() {
-    local versions_dir=".deploy/versions"
+    local versions_dir="deployments"
     local -a versions=()
     
     if [[ ! -d "$versions_dir" ]]; then
@@ -333,7 +333,7 @@ get_all_versions() {
 # ============================================================================
 
 get_latest_version() {
-    local versions_dir=".deploy/versions"
+    local versions_dir="deployments"
     
     if [[ ! -d "$versions_dir" ]]; then
         return 1

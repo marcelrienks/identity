@@ -113,11 +113,11 @@ detect_file_changes() {
             debug "Loaded version manifest from S3: $version_id"
         else
             # Try to load from local
-            if [[ ! -f ".deploy/versions/${version_id}.json" ]]; then
+            if [[ ! -f "deployments/${version_id}.json" ]]; then
                 error "Could not find version manifest for: $version_id"
                 return 1
             fi
-            cp ".deploy/versions/${version_id}.json" "$latest_version_manifest"
+            cp "deployments/${version_id}.json" "$latest_version_manifest"
         fi
     fi
     
@@ -432,8 +432,8 @@ EOF
 )
     
     # Store locally
-    mkdir -p ".deploy/versions"
-    echo "$manifest" > ".deploy/versions/${version_id}.json"
+    mkdir -p "deployments"
+    echo "$manifest" > "deployments/${version_id}.json"
     
     # Store to S3
     echo "$manifest" | s3_upload_object "$s3_bucket" "versions/${version_id}.json" "/dev/stdin" \

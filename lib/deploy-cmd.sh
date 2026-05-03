@@ -692,8 +692,8 @@ create_version_snapshot() {
         }' "$inventory_file")
     
     # Store locally
-    mkdir -p ".deploy/versions"
-    echo "$manifest" > ".deploy/versions/${version_id}.json"
+    mkdir -p "deployments"
+    echo "$manifest" > "deployments/${version_id}.json"
     
     # Store to S3 if not dry-run
     if [[ "$DEPLOY_DRY_RUN" -eq 0 ]]; then

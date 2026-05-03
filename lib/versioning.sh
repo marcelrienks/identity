@@ -81,7 +81,7 @@ EOF
 store_version_manifest() {
     local version_manifest_json="$1"
     local bucket_name="$2"
-    local local_versions_dir="${3:-.deploy/versions}"
+    local local_versions_dir="${3:-deployments}"
     local aws_profile="${4:-${AWS_PROFILE:-default}}"
     
     # Extract version_id from manifest
@@ -107,7 +107,7 @@ store_version_manifest() {
 
 # List all versions (for deployment history)
 list_versions() {
-    local local_versions_dir="${1:-.deploy/versions}"
+    local local_versions_dir="${1:-deployments}"
     local limit="${2:-20}"
     
     section "Available versions"
@@ -142,7 +142,7 @@ list_versions() {
 # Get specific version manifest
 get_version_manifest() {
     local version_id="$1"
-    local local_versions_dir="${2:-.deploy/versions}"
+    local local_versions_dir="${2:-deployments}"
     
     local manifest_file="$local_versions_dir/$version_id.json"
     
@@ -156,7 +156,7 @@ get_version_manifest() {
 
 # Get latest version ID
 get_latest_version_id() {
-    local local_versions_dir="${1:-.deploy/versions}"
+    local local_versions_dir="${1:-deployments}"
     
     if [[ ! -d "$local_versions_dir" ]]; then
         return $EXIT_ERROR
@@ -168,7 +168,7 @@ get_latest_version_id() {
 
 # Get previous version ID
 get_previous_version_id() {
-    local local_versions_dir="${1:-.deploy/versions}"
+    local local_versions_dir="${1:-deployments}"
     
     if [[ ! -d "$local_versions_dir" ]]; then
         return $EXIT_ERROR

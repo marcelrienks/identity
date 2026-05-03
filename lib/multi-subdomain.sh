@@ -266,7 +266,7 @@ EOF
         --content-type "application/json" 2>/dev/null
     
     # Store locally
-    local local_version_dir=".deploy/versions"
+    local local_version_dir="deployments"
     mkdir -p "$local_version_dir"
     echo "$manifest" > "$local_version_dir/multi-${version_id}.json"
     
