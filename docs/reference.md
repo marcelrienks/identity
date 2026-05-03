@@ -91,7 +91,61 @@ aws cloudfront create-invalidation \
 
 ---
 
+## File Patterns
+
+### ✓ Included by Default
+
+- `.html` files
+- `.css` stylesheets
+- `.js` scripts
+- `.json` data files
+- `.jpg`, `.png`, `.svg`, `.webp`, `.gif` images
+- `.ico` favicon
+- `.woff`, `.woff2`, `.ttf`, `.otf` fonts
+
+### ✗ Excluded by Default
+
+- `node_modules/` directory
+- `.git/` and `.gitignore`
+- `.env*` files (security)
+- `*.key` and `*.pem` files (security)
+- `.DS_Store`, `*.tmp` (OS/temp files)
+- Anything in your `.gitignore`
+
+### Customize Patterns
+
+```yaml
+# In .deployrc
+include_patterns:
+  - "*.html"
+  - "*.custom-format"
+
+exclude_patterns:
+  - "vendor/"
+  - "*.map"
+  - "secret*"
+```
+
+---
+
 ## Performance Metrics
+
+### Speed Summary
+
+- **Deploy time:** 6-8 minutes (first time, infrastructure creation)
+- **Update time:** 2-4 minutes (changed files only)
+- **Cache refresh:** 1-2 minutes globally
+- **Content delivery:** <100ms from nearest edge location
+
+### AWS Costs
+
+| Service | Cost | Notes |
+|---------|------|-------|
+| S3 Storage | ~$0.02/month | Small portfolio |
+| CloudFront | ~$0.09/GB | Minimal for portfolio |
+| Route 53 | $0.50/month | Per hosted zone |
+| ACM Certificate | FREE | Auto-renewal |
+| **Total** | **~$1-5/month** | Typical |
 
 ### Initial Deployment Timing
 

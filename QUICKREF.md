@@ -1,34 +1,23 @@
 # Quick Reference
 
-Essential commands and file locations.
+Essential commands — for details see [docs/reference.md](docs/reference.md).
 
 ---
 
-## Commands
+## Commands (One-Liners)
 
 ```bash
-# Deploy everything (first time setup)
-./deploy.sh deploy --domain marcelrienks.com --subdomain www
-
-# Update after changes (detects changed files automatically)
-./deploy.sh update
-
-# View deployment history
-./deploy.sh versions list
-
-# Rollback to previous version
-./deploy.sh rollback
-
-# Validate configuration
-./deploy.sh validate --dry-run
-
-# Get help
-./deploy.sh help
+./deploy.sh deploy --domain marcelrienks.com          # Deploy everything
+./deploy.sh update                                     # Update changed files
+./deploy.sh versions list                              # View history
+./deploy.sh rollback --version 1.0.0                   # Rollback
+./deploy.sh validate --dry-run                         # Test (no changes)
+./deploy.sh help                                       # Show help
 ```
 
 ---
 
-## Project Structure
+## Project Layout
 
 ```
 ├── index.html                    ← Main website
@@ -80,99 +69,48 @@ Essential commands and file locations.
 
 ---
 
+## FAQ
+
+| Q | A |
+|---|---|
+| How do I deploy? | `./deploy.sh deploy --domain marcelrienks.com` |
+| Update after changes? | `./deploy.sh update` |
+| Undo a deployment? | `./deploy.sh rollback --version 1.0.0` |
+| See manifests? | `deployments/1.1.0.json` |
+| Deploy from another machine? | Clone → manifests in git → `./deploy.sh update` |
+| How long? | Deploy: 6-8 min, Update: 2-4 min, Live: 1-2 min |
+| Credentials? | `aws configure` or `export AWS_PROFILE=my-profile` |
+| Bash version? | Need 4.0+. macOS: `brew install bash` |
+| Cache not updating? | Takes 1-2 minutes. Force refresh: `Cmd+Shift+R` |
+
+---
+
+## Docs
+
+| Doc | Purpose |
+|---|---|
+| [README.md](README.md) | Project overview |
+| [docs/guide.md](docs/guide.md) | Workflows & configuration |
+| [docs/reference.md](docs/reference.md) | Commands, operations, performance, security |
+| [docs/architecture.md](docs/architecture.md) | System design & decisions |
+| [docs/deployments.md](docs/deployments.md) | Manifest storage & multi-machine |
+
+See [docs/reference.md](docs/reference.md) for detailed command reference and troubleshooting.
+
+---
+
 ## Common Questions
 
-**Q: How do I deploy?**
-```bash
-./deploy.sh deploy --domain marcelrienks.com
-```
-
-**Q: How do I update after changing index.html?**
-```bash
-./deploy.sh update
-```
-
-**Q: How do I know what changed?**
-```bash
-./deploy.sh update --verbose
-# Shows which files changed
-```
-
-**Q: Can I undo a deployment?**
-```bash
-./deploy.sh rollback --version 1.0.0
-```
-
-**Q: Where are my manifests stored?**
-```
-deployments/1.1.0.json  ← Contains file hashes and paths
-```
-
-**Q: How do I deploy from another machine?**
-```bash
-# On machine B:
-git clone https://github.com/marcelrienks/identity.git
-cd identity
-./deploy.sh update
-# Reads manifest from deployments/1.1.0.json automatically
-```
-
-**Q: How long does deployment take?**
-- Full deploy (`./deploy.sh deploy`): **6-8 minutes**
-- Update (`./deploy.sh update`): **2-4 minutes**
-- Changes live in CloudFront: **1-2 minutes**
-
----
-
-## Important Files
-
-| File | Purpose |
+| Q | A |
 |---|---|
-| `deploy.sh` | Entry point — routes commands |
-| `.deployrc` | Configuration (domain, region, AWS profile) |
-| `deployments/` | Version manifests (tracked in git) |
-| `.deploy/state.json` | Current deployment state (local, not in git) |
-| `docs/guide.md` | Complete user guide |
-| `docs/reference.md` | Technical details |
-
----
-
-## Environment Variables
-
-Override without editing `.deployrc`:
-
-```bash
-# AWS profile
-export AWS_PROFILE=my-profile
-
-# Domain
-export DEPLOY_DOMAIN=example.com
-
-# Region  
-export DEPLOY_REGION=us-west-2
-
-# Then deploy
-./deploy.sh update
-```
-
----
-
-## Troubleshooting
-
-**Q: "No changes detected"**
-- File hashes haven't changed
-- Solution: Make an actual change to a file
-
-**Q: "AWS credentials not found"**
-- Run: `aws configure`
-- Set `AWS_PROFILE` or `AWS_ACCESS_KEY_ID` environment variable
-
-**Q: "Bash version too old"**
-- Need Bash 4.0+
-- macOS: `brew install bash`
-
-**Q: "CloudFront cache still showing old content"**
-- Cache invalidation takes 1-2 minutes
-- Force refresh browser: `Cmd+Shift+R` (macOS) or `Ctrl+Shift+F5` (Windows/Linux)
+| How do I deploy? | `./deploy.sh deploy --domain marcelrienks.com` |
+| Update after changes? | `./deploy.sh update` |
+| Undo a deployment? | `./deploy.sh rollback --version 1.0.0` |
+| See manifests? | `deployments/1.1.0.json` |
+| Deploy from another machine? | Clone → manifests in git → `./deploy.sh update` |
+| How long? | Deploy: 6-8 min, Update: 2-4 min, Live: 1-2 min |
+| Credentials? | `aws configure` or `export AWS_PROFILE=my-profile` |
+| Bash version? | Need 4.0+. macOS: `brew install bash` |
+| Cache not updating? | Takes 1-2 minutes. Force refresh: `Cmd+Shift+R` |
 
 See [docs/reference.md](docs/reference.md) for full troubleshooting guide.
