@@ -24,3 +24,10 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Tool configuration directories
+.claude/
+.github/
+.specify/
+.cel/
+.vscode/
