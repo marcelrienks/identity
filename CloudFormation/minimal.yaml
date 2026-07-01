@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  DomainName:
+    Type: String
+  Subdomain:
+    Type: String
+  HostedZoneName:
+    Type: String
+  CertificateArn:
+    Type: String
+    Default: ''
+  S3BucketName:
+    Type: String
+    Default: ''
+  CloudFrontDistributionId:
+    Type: String
+    Default: ''
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "minimal-${Subdomain}-${DomainName}-${AWS::AccountId}"
+
+Outputs:
+  BucketName:
+    Value: !Ref Bucket

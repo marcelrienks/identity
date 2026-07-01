@@ -108,8 +108,7 @@ Resources:
         Origins:
           - Id: S3Origin
             DomainName: !GetAtt StaticSiteBucket.RegionalDomainName
-            S3OriginConfig:
-              OriginAccessIdentity: ""
+            S3OriginConfig: {}
             OriginAccessControlId: !Ref CloudFrontOriginAccessControl
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
@@ -132,7 +131,7 @@ Resources:
             - !Ref SSLCertificate
             - !Ref CertificateArn
           SslSupportMethod: sni-only
-          MinimumProtocolVersion: TLSv1.2_2021
+          MinimumProtocolVersion: TLSv1.2_2021-06-16
         CustomErrorResponses:
           - ErrorCode: 404
             ResponseCode: 404
