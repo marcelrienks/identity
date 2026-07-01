@@ -185,33 +185,24 @@ detect_file_changes() {
     fi
     
 
-    # Save change manifest - pure bash JSON with proper escaping
+
+    # Save change manifest
     local change_manifest=".deploy/changes.json"
     {
-        printf '{\n  "timestamp": "%s",\n  "added": [\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        local first=1
-        for f in "${added_files[@]}"; do
-            [[ $first -eq 0 ]] && printf ',\n'
-            printf '    "%s"' "${f//\\/\\\\}" | sed 's/"/\\"/g'
-            first=0
-        done
-        printf '\n  ],\n  "modified": [\n'
-        first=1
-        for f in "${modified_files[@]}"; do
-            [[ $first -eq 0 ]] && printf ',\n'
-            printf '    "%s"' "${f//\\/\\\\}" | sed 's/"/\\"/g'
-            first=0
-        done
-        printf '\n  ],\n  "deleted": [\n'
-        first=1
-        for f in "${deleted_files[@]}"; do
-            [[ $first -eq 0 ]] && printf ',\n'
-            printf '    "%s"' "${f//\\/\\\\}" | sed 's/"/\\"/g'
-            first=0
-        done
-        printf '\n  ]\n}\n'
+        echo '{'
+        echo '  "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",'
+        echo '  "added": ['
+        printf '%s\n' "${added_files[@]}" | jq -R . 2>/dev/null | grep -v '^""$' | paste -sd ',' - | sed 's/,$//'
+        echo '  ],'
+        echo '  "modified": ['
+        printf '%s\n' "${modified_files[@]}" | jq -R . 2>/dev/null | grep -v '^""$' | paste -sd ',' - | sed 's/,$//'
+        echo '  ],'
+        echo '  "deleted": ['
+        printf '%s\n' "${deleted_files[@]}" | jq -R . 2>/dev/null | grep -v '^""$' | paste -sd ',' - | sed 's/,$//'
+        echo '  ]'
+        echo '}'
     } > "$change_manifest"
-    
+
     return 0
 }
 # T030: Selective File Upload for Changed Files Only
@@ -233,12 +224,12 @@ upload_changed_files() {
     
     # Added files
     while IFS= read -r file; do
-        files_to_upload+=("$file")
+        [[ -n "$file" ]] && files_to_upload+=("$file")
     done < <(jq -r '.added[]' "$change_manifest")
-    
+
     # Modified files
     while IFS= read -r file; do
-        files_to_upload+=("$file")
+        [[ -n "$file" ]] && files_to_upload+=("$file")
     done < <(jq -r '.modified[]' "$change_manifest")
     
     if [[ ${#files_to_upload[@]} -eq 0 ]]; then
@@ -417,14 +408,10 @@ create_update_version_snapshot() {
     info "Creating version snapshot: $version_id"
     
     # Get all current files from source directory
-    local -a current_files
-    find_files_to_upload "$UPDATE_SOURCE_DIR" current_files
-    
-    # Build file inventory
     local files_json="["
     local first=1
-    
-    for file in "${current_files[@]}"; do
+
+    while IFS= read -r file; do
         local relative_path="${file#$UPDATE_SOURCE_DIR/}"
         local file_hash=$(sha256sum "$file" | awk '{print $1}')
         local file_size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null)
@@ -435,7 +422,7 @@ create_update_version_snapshot() {
         first=0
         
         files_json="$files_json{\"path\":\"$relative_path\",\"hash\":\"$file_hash\",\"size\":$file_size}"
-    done
+    done < <(find_files_to_upload "$UPDATE_SOURCE_DIR")
     
     files_json="$files_json]"
     
@@ -456,9 +443,10 @@ EOF
     echo "$manifest" > "deployments/${version_id}.json"
     
     # Store to S3
-    echo "$manifest" | s3_upload_object "$s3_bucket" "versions/${version_id}.json" "/dev/stdin" \
-        --content-type "application/json" \
-        --cache-control "max-age=0"
+    local temp_manifest=".deploy/temp-manifest-${version_id}.json"
+    echo "$manifest" > "$temp_manifest"
+    s3_upload_object "$temp_manifest" "$s3_bucket" "versions/${version_id}.json"
+    rm -f "$temp_manifest"
     
     # Update deployment record
     local log_file=".deploy/deployments/$(date +%Y-%m-%d).log"
@@ -557,7 +545,7 @@ ensure_version_for_rollback() {
     local version_id="$2"
     
     # Verify version manifest exists both locally and in S3
-    if [[ ! -f ".deploy/versions/${version_id}.json" ]]; then
+    if [[ ! -f "deployments/${version_id}.json" ]]; then
         error "Local version manifest not found: $version_id"
         return 1
     fi

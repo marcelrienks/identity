@@ -67,7 +67,7 @@ info() {
 debug() {
     local message="$*"
     if _should_log "DEBUG"; then
-        echo -e "${COLOR_CYAN}➜${COLOR_RESET}  $message"
+        echo -e "${COLOR_CYAN}➜${COLOR_RESET}  $message" >&2
     fi
     _write_log_file "DEBUG" "$message"
 }

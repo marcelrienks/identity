@@ -84,7 +84,7 @@ Resources:
         ViewerCertificate:
           AcmCertificateArn: !Ref CertificateArn
           SslSupportMethod: sni-only
-          MinimumProtocolVersion: TLSv1.2_2021-06-16
+          MinimumProtocolVersion: TLSv1.2_2021
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy

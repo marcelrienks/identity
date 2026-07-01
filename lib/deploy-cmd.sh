@@ -635,9 +635,7 @@ upload_files_to_s3() {
                     esac
                     
                     # Upload file to S3
-                    if s3_upload_object "$s3_bucket" "$relative_path" "$local_path" \
-                        --content-type "$content_type" \
-                        --cache-control "$cache_control"; then
+                    if s3_upload_object "$local_path" "$s3_bucket" "$relative_path"; then
                         
                         info "✓ Uploaded: $relative_path"
                         
@@ -730,9 +728,10 @@ create_version_snapshot() {
     
     # Store to S3 if not dry-run
     if [[ "$DEPLOY_DRY_RUN" -eq 0 ]]; then
-        echo "$manifest" | s3_upload_object "$s3_bucket" "versions/${version_id}.json" "/dev/stdin" \
-            --content-type "application/json" \
-            --cache-control "max-age=0"
+        local temp_manifest=".deploy/temp-manifest-${version_id}.json"
+        echo "$manifest" > "$temp_manifest"
+        s3_upload_object "$temp_manifest" "$s3_bucket" "versions/${version_id}.json"
+        rm -f "$temp_manifest"
     fi
     
     # Save deployment record

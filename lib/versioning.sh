@@ -242,8 +242,8 @@ create_next_version_manifest() {
     jq ".version_id = \"$new_version\" | .timestamp = \"$timestamp\"" "$latest_manifest" > "$new_manifest_file"
     
     if [[ $? -eq 0 ]]; then
-        info "Created version manifest: $new_version"
         echo "$new_version"
+        info "Created version manifest: $new_version" >&2
         return $EXIT_SUCCESS
     else
         error "Failed to create version manifest"
