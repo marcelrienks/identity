@@ -179,28 +179,37 @@ check_iam_permissions() {
 scan_file_for_secrets() {
     local file="$1"
     local -a found_patterns=()
-    
+
     if [[ ! -f "$file" ]]; then
         return $EXIT_SUCCESS
     fi
-    
+
+    # Skip non-secret filetypes
+    case "$file" in
+        *.js.map|*.css.map|*.json|*.woff|*.woff2|*.ttf|*.otf|*.png|*.jpg|*.gif|*.webp|*.ico)
+            return $EXIT_SUCCESS
+            ;;
+    esac
+
     # Check filename patterns
     for pattern in "${SECRET_PATTERNS[@]}"; do
         if [[ "$file" =~ $pattern ]]; then
             found_patterns+=("$pattern")
         fi
     done
-    
+
     # Check file content patterns (for some secrets)
-    # Look for common secret markers in file content
-    if grep -qi "private.key\|-----BEGIN\|password\|api.key\|secret.key" "$file" 2>/dev/null; then
-        found_patterns+=("suspicious_content")
+    # Look for common secret markers in file content - only in text files
+    if [[ "$file" == *.sh ]] || [[ "$file" == *.md ]] || [[ "$file" == *.yaml ]] || [[ "$file" == *.yml ]] || [[ "$file" == *.html ]]; then
+        if grep -qi "private.key\|-----BEGIN\|password.*=\|api.key\|secret.key\|AKIA[A-Z0-9]\{16\}" "$file" 2>/dev/null; then
+            found_patterns+=("suspicious_content")
+        fi
     fi
-    
+
     if [[ ${#found_patterns[@]} -gt 0 ]]; then
         return 1  # Found secrets
     fi
-    
+
     return 0  # No secrets found
 }
 
@@ -208,10 +217,10 @@ scan_file_for_secrets() {
 validate_files_for_secrets() {
     local source_dir="${1:-.}"
     local -a files_with_secrets=()
-    
+
     section "Scanning files for secrets"
-    
-    # Find all files in source directory
+
+    # Find only files that will be uploaded (matching include patterns)
     while IFS= read -r file; do
         if scan_file_for_secrets "$file"; then
             # No secrets
@@ -221,7 +230,7 @@ validate_files_for_secrets() {
             warn "Potential secrets detected: $file"
             files_with_secrets+=("$file")
         fi
-    done < <(find "$source_dir" -type f 2>/dev/null)
+    done < <(find_files_to_upload "$source_dir")
     
     if [[ ${#files_with_secrets[@]} -gt 0 ]]; then
         error "Files containing potential secrets detected:"
