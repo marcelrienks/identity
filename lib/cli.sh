@@ -40,14 +40,17 @@ COMMANDS:
   help          Show this help message
 
 OPTIONS (common):
-  --domain DOMAIN          Domain name (e.g., example.com)
-  --subdomain DOMAIN       Subdomain (e.g., www; default: www)
-  --region REGION          AWS region (default: us-east-1)
-  --source-dir PATH        Source directory with website files (default: ./)
-  --aws-profile PROFILE    AWS CLI profile to use (default: default)
-  --dry-run                Validate without making AWS changes
-  --verbose, -v            Enable verbose output (debug logging)
-  --help, -h              Show detailed help for command
+  --domain DOMAIN              Domain name (e.g., example.com)
+  --subdomain DOMAIN           Subdomain (e.g., www; default: www)
+  --region REGION              AWS region (default: us-east-1)
+  --source-dir PATH            Source directory with website files (default: ./)
+  --aws-profile PROFILE        AWS CLI profile to use (default: default)
+  --certificate-arn ARN        Use existing ACM certificate (auto-provision if empty)
+  --s3-bucket-name NAME        Use existing S3 bucket (auto-create if empty)
+  --cloudfront-distribution-id ID  Use existing CloudFront distribution (auto-create if empty)
+  --dry-run                    Validate without making AWS changes
+  --verbose, -v                Enable verbose output (debug logging)
+  --help, -h                   Show detailed help for command
 
 EXAMPLES:
 
@@ -100,32 +103,74 @@ DESCRIPTION:
   This is a one-time operation to set up a new website. For updates to
   existing websites, use the 'update' command.
 
-OPTIONS:
-  --domain DOMAIN           Required. Website domain (e.g., example.com)
-  --subdomain SUBDOMAIN     Subdomain to deploy (default: www)
-                           Example: --subdomain blog deploys blog.example.com
-  --region REGION          AWS region (default: us-east-1)
-  --source-dir PATH        Source directory (default: ./)
-  --aws-profile PROFILE    AWS CLI profile (default: default)
-  --dry-run                Validate without making changes
-  --verbose, -v            Verbose output
+  Each AWS resource can be auto-provisioned (default) or use an existing
+  resource by providing its ID/ARN.
+
+REQUIRED OPTIONS:
+  --domain DOMAIN              Website domain (e.g., example.com)
+
+OPTIONAL OPTIONS:
+  --subdomain SUBDOMAIN        Subdomain to deploy (default: www)
+                              Example: --subdomain blog deploys blog.example.com
+  --region REGION              AWS region (default: us-east-1)
+                              Must be us-east-1 for CloudFront + ACM
+  --source-dir PATH            Source directory (default: ./)
+  --aws-profile PROFILE        AWS CLI profile (default: default)
+
+RESOURCE OVERRIDES (auto-provision if not provided):
+  --certificate-arn ARN        Use existing ACM certificate
+                              Format: arn:aws:acm:us-east-1:123456789012:certificate/abc123
+  --s3-bucket-name NAME        Use existing S3 bucket
+                              Example: --s3-bucket-name my-website-bucket
+  --cloudfront-distribution-id ID  Use existing CloudFront distribution
+                              Format: E1234ABCD5FGH
+
+FLAGS:
+  --dry-run                    Validate without making changes
+  --verbose, -v                Verbose output
 
 EXAMPLES:
-  # Basic deployment
+  # Auto-provision all resources (default)
   ./deploy.sh deploy --domain example.com
 
-  # Deploy with custom subdomain and source directory
+  # Use existing certificate, auto-provision others
+  ./deploy.sh deploy --domain example.com \
+    --certificate-arn arn:aws:acm:us-east-1:123456789012:certificate/abc123
+
+  # Use existing S3 bucket and certificate
+  ./deploy.sh deploy --domain example.com \
+    --s3-bucket-name my-bucket \
+    --certificate-arn arn:aws:acm:...
+
+  # Use all existing resources
+  ./deploy.sh deploy --domain example.com \
+    --certificate-arn arn:aws:acm:... \
+    --s3-bucket-name my-bucket \
+    --cloudfront-distribution-id E1234ABCD5FGH
+
+  # Deploy custom subdomain
   ./deploy.sh deploy --domain example.com --subdomain blog --source-dir ./blog-content
 
   # Validate before deploying
-  ./deploy.sh deploy --domain example.com --dry-run
+  ./deploy.sh deploy --domain example.com --dry-run --verbose
 
-WHAT GETS CREATED:
+AUTO-PROVISIONED RESOURCES (if not overridden):
   - S3 bucket (with versioning enabled)
-  - CloudFront distribution
-  - Route 53 DNS records
-  - ACM SSL/TLS certificate
+  - CloudFront distribution with OAC
+  - Route 53 DNS alias record
+  - ACM SSL/TLS certificate with auto-renewal
   - CloudFormation stack
+
+FINDING AWS RESOURCE IDs:
+  # List ACM certificates
+  aws acm list-certificates --region us-east-1
+
+  # List S3 buckets
+  aws s3 ls
+
+  # List CloudFront distributions
+  aws cloudfront list-distributions | \
+    jq '.DistributionList.Items[] | {Id, DomainName}'
 
 EOF
             ;;

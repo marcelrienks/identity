@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/opt/homebrew/bin/bash
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                                                                              ║
@@ -16,7 +16,14 @@ set -o pipefail
 # Check bash version (need 4.0+ for associative arrays)
 if [[ ${BASH_VERSINFO[0]} -lt 4 ]]; then
     echo "ERROR: Bash 4.0+ is required. Current version: $BASH_VERSION"
-    echo "macOS users: Install bash 4+ via Homebrew: brew install bash"
+    echo ""
+    echo "macOS Setup:"
+    echo "  1. brew install bash"
+    echo "  2. Update deploy.sh shebang to point to Homebrew Bash:"
+    echo "     (echo '#!/opt/homebrew/bin/bash'; tail -n +2 deploy.sh) > deploy.sh.tmp && mv deploy.sh.tmp deploy.sh"
+    echo "  3. Verify: head -1 deploy.sh"
+    echo ""
+    echo "See README.md Troubleshooting section for details."
     exit 1
 fi
 

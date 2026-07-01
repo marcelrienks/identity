@@ -141,8 +141,10 @@ detect_file_changes() {
     
     # Find all current files
     local -a local_files
-    find_files_to_upload "$source_dir" local_files
-    
+    while IFS= read -r file; do
+        local_files+=("$file")
+    done < <(find_files_to_upload "$source_dir")
+
     for file in "${local_files[@]}"; do
         local relative_path="${file#$source_dir/}"
         local file_hash=$(sha256sum "$file" | awk '{print $1}')
@@ -581,15 +583,23 @@ ensure_idempotency() {
 
 cmd_update() {
     local start_time=$(date +%s)
-    
+
     info "═══════════════════════════════════════════════════════════════════"
     info "AWS Static Website Update - Phase 4: Content Updates Post-Deployment"
     info "═══════════════════════════════════════════════════════════════════"
-    
+
     # Parse arguments and load deployment state
     if ! parse_update_arguments "$@"; then
         return 1
     fi
+
+    # Verify stack exists
+    if ! cfn_stack_exists "$UPDATE_STACK_NAME" "$UPDATE_REGION" "${AWS_PROFILE:-default}"; then
+        error "CloudFormation stack does not exist: $UPDATE_STACK_NAME"
+        error "Run './deploy.sh deploy' to create a new deployment"
+        return 1
+    fi
+    debug "✓ Stack exists: $UPDATE_STACK_NAME"
     
     # Bump version (major or minor, default minor)
     local bump_type="${UPDATE_VERSION_BUMP:-minor}"

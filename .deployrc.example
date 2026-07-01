@@ -30,6 +30,24 @@ source_dir: ./
 # Profiles are defined in ~/.aws/credentials and ~/.aws/config
 aws_profile: default
 
+# Optional: Existing ACM certificate ARN
+# Leave empty to auto-provision a new certificate (default)
+# Set this to use an existing ACM certificate already configured on your domain
+# Example: arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012
+certificate_arn:
+
+# Optional: Existing S3 bucket name
+# Leave empty to auto-create a new bucket (default)
+# Set this to use an existing S3 bucket for website files
+# Example: my-website-bucket
+s3_bucket_name:
+
+# Optional: Existing CloudFront distribution ID
+# Leave empty to auto-create a new distribution (default)
+# Set this to use an existing CloudFront distribution
+# Example: E1234ABCD5FGH
+cloudfront_distribution_id:
+
 # Optional: Include patterns (files to deploy)
 # Default patterns cover most web assets: HTML, CSS, JS, JSON, images, fonts
 # Add custom patterns here for additional file types
@@ -89,12 +107,18 @@ exclude_patterns:
 #   export DEPLOY_REGION="us-east-1"
 #   export DEPLOY_SOURCE_DIR="./"
 #   export DEPLOY_AWS_PROFILE="default"
+#   export DEPLOY_CERTIFICATE_ARN="arn:aws:acm:..."
+#   export DEPLOY_S3_BUCKET_NAME="my-bucket"
+#   export DEPLOY_CLOUDFRONT_DISTRIBUTION_ID="E1234ABCD"
 #   export DEPLOY_DRY_RUN="1"
 #   export DEPLOY_VERBOSE="1"
 #
 # Command-line arguments override all other settings:
 #
 #   ./deploy.sh deploy --domain example.com --subdomain www --dry-run
+#   ./deploy.sh deploy --domain example.com --certificate-arn arn:aws:acm:...
+#   ./deploy.sh deploy --domain example.com --s3-bucket-name my-bucket
+#   ./deploy.sh deploy --domain example.com --cloudfront-distribution-id E1234ABCD
 #
 # Priority order: CLI args > Environment vars > Config file (.deployrc) > Defaults
 #

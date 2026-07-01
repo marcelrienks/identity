@@ -6,10 +6,12 @@
 # Check if CloudFormation stack exists
 cfn_stack_exists() {
     local stack_name="$1"
-    local aws_profile="${2:-${AWS_PROFILE:-default}}"
-    
+    local region="${2:-${AWS_REGION:-us-east-1}}"
+    local aws_profile="${3:-${AWS_PROFILE:-default}}"
+
     aws cloudformation describe-stacks \
         --stack-name "$stack_name" \
+        --region "$region" \
         --profile "$aws_profile" \
         --query 'Stacks[0].StackStatus' \
         --output text 2>/dev/null | grep -q . && return 0 || return 1
@@ -18,10 +20,12 @@ cfn_stack_exists() {
 # Describe CloudFormation stack (get all details)
 cfn_describe_stack() {
     local stack_name="$1"
-    local aws_profile="${2:-${AWS_PROFILE:-default}}"
-    
+    local region="${2:-${AWS_REGION:-us-east-1}}"
+    local aws_profile="${3:-${AWS_PROFILE:-default}}"
+
     aws cloudformation describe-stacks \
         --stack-name "$stack_name" \
+        --region "$region" \
         --profile "$aws_profile" \
         --output json 2>/dev/null
 }
@@ -29,50 +33,72 @@ cfn_describe_stack() {
 # Get CloudFormation stack status
 cfn_get_stack_status() {
     local stack_name="$1"
-    local aws_profile="${2:-${AWS_PROFILE:-default}}"
-    
+    local region="${2:-${AWS_REGION:-us-east-1}}"
+    local aws_profile="${3:-${AWS_PROFILE:-default}}"
+
     aws cloudformation describe-stacks \
         --stack-name "$stack_name" \
+        --region "$region" \
         --profile "$aws_profile" \
         --query 'Stacks[0].StackStatus' \
         --output text 2>/dev/null
+}
+
+# Convert KEY=VALUE parameters to AWS CloudFormation format
+_format_cfn_parameters() {
+    local -n params_ref=$1
+    local -a formatted=()
+
+    for param in "${params_ref[@]}"; do
+        local key="${param%%=*}"
+        local value="${param#*=}"
+        formatted+=("ParameterKey=$key,ParameterValue=$value")
+    done
+
+    echo "${formatted[@]}"
 }
 
 # Create CloudFormation stack
 cfn_create_stack() {
     local stack_name="$1"
     local template_file="$2"
-    local parameters_json="$3"  # JSON format: {"ParameterKey":"value",...}
-    local aws_profile="${4:-${AWS_PROFILE:-default}}"
-    
+    local parameters_array_ref="$3"  # Name of array variable with KEY=VALUE parameters
+    local region="${4:-${AWS_REGION:-us-east-1}}"
+    local aws_profile="${5:-${AWS_PROFILE:-default}}"
+
     debug "Creating CloudFormation stack: $stack_name"
     debug "Template: $template_file"
-    
+
     if [[ ! -f "$template_file" ]]; then
         error "Template file not found: $template_file"
         return $EXIT_ERROR
     fi
-    
+
     # Build parameters argument if provided
     local -a param_args=()
-    if [[ -n "$parameters_json" ]]; then
-        # Convert JSON to AWS format: ParameterKey=key1,ParameterValue=value1 ...
-        param_args+=(--parameters "$parameters_json")
+    if [[ -n "$parameters_array_ref" ]]; then
+        # Get the array by name and format for AWS CLI
+        local -n params_arr="$parameters_array_ref"
+        local formatted_params=$(_format_cfn_parameters params_arr)
+        if [[ -n "$formatted_params" ]]; then
+            param_args+=(--parameters $formatted_params)
+        fi
     fi
-    
+
     # Create stack
     if ! aws cloudformation create-stack \
         --stack-name "$stack_name" \
         --template-body "file://$template_file" \
+        --region "$region" \
         "${param_args[@]}" \
         --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
         --profile "$aws_profile" \
         --output text 2>&1; then
-        
+
         error "Failed to create CloudFormation stack: $stack_name"
         return $EXIT_AWS_ERROR
     fi
-    
+
     debug "Stack creation initiated: $stack_name"
     return $EXIT_SUCCESS
 }
@@ -81,32 +107,39 @@ cfn_create_stack() {
 cfn_update_stack() {
     local stack_name="$1"
     local template_file="$2"
-    local parameters_json="$3"
-    local aws_profile="${4:-${AWS_PROFILE:-default}}"
-    
+    local parameters_array_ref="$3"  # Name of array variable with KEY=VALUE parameters
+    local region="${4:-${AWS_REGION:-us-east-1}}"
+    local aws_profile="${5:-${AWS_PROFILE:-default}}"
+
     debug "Updating CloudFormation stack: $stack_name"
-    
+
     if [[ ! -f "$template_file" ]]; then
         error "Template file not found: $template_file"
         return $EXIT_ERROR
     fi
-    
+
     # Build parameters argument
     local -a param_args=()
-    if [[ -n "$parameters_json" ]]; then
-        param_args+=(--parameters "$parameters_json")
+    if [[ -n "$parameters_array_ref" ]]; then
+        # Get the array by name and format for AWS CLI
+        local -n params_arr="$parameters_array_ref"
+        local formatted_params=$(_format_cfn_parameters params_arr)
+        if [[ -n "$formatted_params" ]]; then
+            param_args+=(--parameters $formatted_params)
+        fi
     fi
-    
+
     # Update stack
     local update_result
     update_result=$(aws cloudformation update-stack \
         --stack-name "$stack_name" \
         --template-body "file://$template_file" \
+        --region "$region" \
         "${param_args[@]}" \
         --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
         --profile "$aws_profile" \
         --output text 2>&1) || {
-        
+
         # Check if error is "No updates are to be performed"
         if echo "$update_result" | grep -q "No updates are to be performed"; then
             debug "No updates needed for stack: $stack_name"
@@ -117,7 +150,7 @@ cfn_update_stack() {
             return $EXIT_AWS_ERROR
         fi
     }
-    
+
     debug "Stack update initiated: $stack_name"
     return $EXIT_SUCCESS
 }
@@ -125,10 +158,12 @@ cfn_update_stack() {
 # Get stack output values (e.g., S3 bucket name, CloudFront domain)
 cfn_get_stack_outputs() {
     local stack_name="$1"
-    local aws_profile="${2:-${AWS_PROFILE:-default}}"
-    
+    local region="${2:-${AWS_REGION:-us-east-1}}"
+    local aws_profile="${3:-${AWS_PROFILE:-default}}"
+
     aws cloudformation describe-stacks \
         --stack-name "$stack_name" \
+        --region "$region" \
         --profile "$aws_profile" \
         --query 'Stacks[0].Outputs' \
         --output json 2>/dev/null
@@ -138,10 +173,12 @@ cfn_get_stack_outputs() {
 cfn_get_stack_output() {
     local stack_name="$1"
     local output_key="$2"
-    local aws_profile="${3:-${AWS_PROFILE:-default}}"
-    
+    local region="${3:-${AWS_REGION:-us-east-1}}"
+    local aws_profile="${4:-${AWS_PROFILE:-default}}"
+
     aws cloudformation describe-stacks \
         --stack-name "$stack_name" \
+        --region "$region" \
         --profile "$aws_profile" \
         --query "Stacks[0].Outputs[?OutputKey=='$output_key'].OutputValue" \
         --output text 2>/dev/null
@@ -218,10 +255,12 @@ cfn_poll_stack_operation() {
 # Get stack events (for debugging)
 cfn_describe_stack_events() {
     local stack_name="$1"
-    local aws_profile="${2:-${AWS_PROFILE:-default}}"
-    
+    local region="${2:-${AWS_REGION:-us-east-1}}"
+    local aws_profile="${3:-${AWS_PROFILE:-default}}"
+
     aws cloudformation describe-stack-events \
         --stack-name "$stack_name" \
+        --region "$region" \
         --profile "$aws_profile" \
         --query 'StackEvents[*].[Timestamp,ResourceStatus,LogicalResourceId,ResourceStatusReason]' \
         --output table 2>/dev/null || true
@@ -230,15 +269,17 @@ cfn_describe_stack_events() {
 # Delete CloudFormation stack
 cfn_delete_stack() {
     local stack_name="$1"
-    local aws_profile="${2:-${AWS_PROFILE:-default}}"
-    
+    local region="${2:-${AWS_REGION:-us-east-1}}"
+    local aws_profile="${3:-${AWS_PROFILE:-default}}"
+
     debug "Deleting CloudFormation stack: $stack_name"
-    
+
     aws cloudformation delete-stack \
         --stack-name "$stack_name" \
+        --region "$region" \
         --profile "$aws_profile" \
         --output text 2>/dev/null
-    
+
     debug "Stack deletion initiated: $stack_name"
     return $EXIT_SUCCESS
 }

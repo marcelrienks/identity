@@ -154,6 +154,11 @@ region: us-east-1                # default: us-east-1
 source_dir: ./                   # default: ./
 aws_profile: default             # default: default
 
+# Certificate (optional)
+# Leave empty to auto-provision, or provide existing cert ARN
+certificate_arn:                 # Use existing cert (leave blank for auto-provision)
+# certificate_arn: arn:aws:acm:us-east-1:123456789012:certificate/abc123
+
 # File patterns
 include_patterns:
   - "*.html"
@@ -181,13 +186,17 @@ exclude_patterns:
 ### Environment Variables
 
 ```bash
-# Override config file settings
+# Core deployment settings
 export DEPLOY_DOMAIN="marcelrienks.com"
 export DEPLOY_SUBDOMAIN="www"
 export DEPLOY_REGION="us-east-1"
 export DEPLOY_AWS_PROFILE="default"
 
-# Behavior
+# Certificate (leave empty for auto-provision)
+export DEPLOY_CERTIFICATE_ARN=""
+# export DEPLOY_CERTIFICATE_ARN="arn:aws:acm:us-east-1:123456789012:certificate/abc123"
+
+# Behavior flags
 export DEPLOY_DRY_RUN="1"         # Test without changes
 export DEPLOY_VERBOSE="1"         # Debug output
 export LOG_LEVEL="DEBUG"          # Debug logging
@@ -212,6 +221,94 @@ DEPLOY_DOMAIN=override.com ./deploy.sh deploy
 # (with domain: override.com in .deployrc)
 ./deploy.sh deploy
 ```
+
+---
+
+## Command Arguments Reference
+
+### Deploy Command
+
+**Syntax:** `./deploy.sh deploy [OPTIONS]`
+
+| Argument | Env Var | Config Key | Default | Required | Description |
+|----------|---------|-----------|---------|----------|-------------|
+| `--domain` | `DEPLOY_DOMAIN` | `domain` | — | ✅ Yes | Domain name (e.g., `example.com`). Must be registered in Route 53 hosted zone. |
+| `--subdomain` | `DEPLOY_SUBDOMAIN` | `subdomain` | `www` | No | Subdomain prefix (e.g., `www`, `blog`, `docs`, `api`). Creates `subdomain.domain.com`. |
+| `--region` | `DEPLOY_REGION` | `region` | `us-east-1` | No | AWS region. **Must be `us-east-1`** for CloudFront + ACM integration. |
+| `--source-dir` | `DEPLOY_SOURCE_DIR` | `source_dir` | `./` | No | Directory containing website files. Uploaded to S3 bucket. |
+| `--aws-profile` | `DEPLOY_AWS_PROFILE` | `aws_profile` | `default` | No | AWS CLI profile name. Defined in `~/.aws/config`. |
+| `--certificate-arn` | `DEPLOY_CERTIFICATE_ARN` | `certificate_arn` | `` | No | Existing ACM certificate ARN. Leave empty to auto-provision. Format: `arn:aws:acm:us-east-1:123456789012:certificate/12345678-...` |
+| `--s3-bucket-name` | `DEPLOY_S3_BUCKET_NAME` | `s3_bucket_name` | `` | No | Existing S3 bucket name. Leave empty to auto-create. Must be accessible and have proper permissions. |
+| `--cloudfront-distribution-id` | `DEPLOY_CLOUDFRONT_DISTRIBUTION_ID` | `cloudfront_distribution_id` | `` | No | Existing CloudFront distribution ID. Leave empty to auto-create. Format: `E1234ABCD5FGH` |
+| `--dry-run` | — | `dry_run` | — | No | Validate without making AWS changes. Useful for testing. |
+| `-v`, `--verbose` | — | `verbose` | — | No | Enable debug output. Shows detailed operation logs. |
+
+### Resource Provisioning Modes
+
+Each major resource can be auto-provisioned (default) or use an existing resource:
+
+#### Auto-Provision Everything (Default)
+```bash
+./deploy.sh deploy --domain example.com --subdomain www
+# Creates: S3 bucket, CloudFront distribution, ACM certificate, Route53 record
+```
+
+#### Use Existing Certificate
+```bash
+./deploy.sh deploy --domain example.com \
+  --certificate-arn arn:aws:acm:us-east-1:123456789012:certificate/abc123
+# CloudFormation creates S3, CloudFront, Route53; skips certificate
+```
+
+#### Use Existing S3 Bucket
+```bash
+./deploy.sh deploy --domain example.com \
+  --s3-bucket-name my-existing-bucket
+# CloudFormation creates CloudFront, certificate, Route53; skips S3 bucket
+```
+
+#### Use Existing CloudFront Distribution
+```bash
+./deploy.sh deploy --domain example.com \
+  --cloudfront-distribution-id E1234ABCD5FGH
+# CloudFormation creates S3, certificate, Route53; skips CloudFront
+# Routes Route53 record to existing distribution
+```
+
+#### Mix Auto-Provisioned and Existing Resources
+```bash
+./deploy.sh deploy --domain example.com \
+  --certificate-arn arn:aws:acm:... \
+  --s3-bucket-name my-bucket
+# Uses existing cert and bucket; auto-creates CloudFront and Route53
+```
+
+#### Finding AWS Resource IDs
+
+**ACM Certificate ARN:**
+```bash
+aws acm list-certificates --region us-east-1
+aws acm describe-certificate --certificate-arn arn:aws:acm:... --region us-east-1
+```
+
+**S3 Bucket Name:**
+```bash
+aws s3 ls
+```
+
+**CloudFront Distribution ID:**
+```bash
+aws cloudfront list-distributions | jq '.DistributionList.Items[] | {Id, DomainName, Aliases}'
+```
+
+### Other Commands
+
+| Command | Syntax | Arguments |
+|---------|--------|-----------|
+| **Update** | `./deploy.sh update` | `--version [major\|minor]`, `--dry-run`, `-v` |
+| **Rollback** | `./deploy.sh rollback` | `--version VERSION`, `--dry-run`, `-v` |
+| **Versions** | `./deploy.sh versions` | `--region`, `--aws-profile` |
+| **Validate** | `./deploy.sh validate` | `--dry-run`, `-v` |
 
 ---
 

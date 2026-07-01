@@ -21,20 +21,41 @@ Parameters:
   Subdomain:
     Type: String
     Description: The subdomain to provision (e.g., www)
+  CertificateArn:
+    Type: String
+    Default: ''
+    Description: Existing ACM certificate ARN. Leave empty to auto-provision a new certificate
+  S3BucketName:
+    Type: String
+    Default: ''
+    Description: Existing S3 bucket name. Leave empty to auto-create a new bucket
+  CloudFrontDistributionId:
+    Type: String
+    Default: ''
+    Description: Existing CloudFront distribution ID. Leave empty to auto-create a new distribution
+  UseExistingOriginAccessControl:
+    Type: String
+    Default: ''
+    AllowedValues: ['', 'yes', 'no']
+    Description: Existing Origin Access Control ID. Leave empty to auto-create. Only used with existing CloudFront.
+
+Conditions:
+  ShouldCreateCertificate: !Equals [!Ref CertificateArn, '']
+  ShouldCreateS3Bucket: !Equals [!Ref S3BucketName, '']
+  ShouldCreateCloudFront: !Equals [!Ref CloudFrontDistributionId, '']
 
 Resources:
   # ACM Certificate for CloudFront (must be in us-east-1)
   SSLCertificate:
     Type: AWS::CertificateManager::Certificate
+    Condition: ShouldCreateCertificate
     Properties:
       DomainName: !Sub "${Subdomain}.${DomainName}"
       ValidationMethod: DNS
-      DomainValidationOptions:
-        - DomainName: !Sub "${Subdomain}.${DomainName}"
-          HostedZoneId: Z0003562GQFFYQVGWRWO
 
   StaticSiteBucket:
     Type: AWS::S3::Bucket
+    Condition: ShouldCreateS3Bucket
     Properties:
       BucketName: !Sub "${Subdomain}-${DomainName}-static"
       OwnershipControls:
@@ -48,6 +69,7 @@ Resources:
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
+    Condition: ShouldCreateS3Bucket
     Properties:
       Bucket: !Ref StaticSiteBucket
       PolicyDocument:
@@ -56,13 +78,17 @@ Resources:
             Principal:
               Service: cloudfront.amazonaws.com
             Action: s3:GetObject
-            Resource: !Sub "arn:aws:s3:::${Subdomain}-${DomainName}-static/*"
+            Resource: !Sub "arn:aws:s3:::${StaticSiteBucket}/*"
             Condition:
               StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+                AWS:SourceArn: !If
+                  - ShouldCreateCloudFront
+                  - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+                  - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistributionId}"
 
   CloudFrontOriginAccessControl:
     Type: AWS::CloudFront::OriginAccessControl
+    Condition: ShouldCreateCloudFront
     Properties:
       OriginAccessControlConfig:
         Name: !Sub "${Subdomain}.${DomainName}-OAC"
@@ -72,7 +98,7 @@ Resources:
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
-    DependsOn: SSLCertificate
+    Condition: ShouldCreateCloudFront
     Properties:
       DistributionConfig:
         Enabled: true
@@ -101,7 +127,10 @@ Resources:
             Cookies:
               Forward: none
         ViewerCertificate:
-          AcmCertificateArn: !Ref SSLCertificate
+          AcmCertificateArn: !If
+            - ShouldCreateCertificate
+            - !Ref SSLCertificate
+            - !Ref CertificateArn
           SslSupportMethod: sni-only
           MinimumProtocolVersion: TLSv1.2_2021
         CustomErrorResponses:
@@ -120,7 +149,7 @@ Resources:
       Name: !Sub "${Subdomain}.${HostedZoneName}"
       Type: A
       AliasTarget:
-        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        DNSName: !If [ShouldCreateCloudFront, !GetAtt CloudFrontDistribution.DomainName, !Sub "d${CloudFrontDistributionId}.cloudfront.net"]
         HostedZoneId: Z2FDTNDATAQYW2  # CloudFront hosted zone ID (constant)
 
 Outputs:
@@ -129,10 +158,10 @@ Outputs:
     Value: !Sub "https://${Subdomain}.${DomainName}"
   CloudFrontDomainName:
     Description: CloudFront distribution domain name
-    Value: !GetAtt CloudFrontDistribution.DomainName
+    Value: !If [ShouldCreateCloudFront, !GetAtt CloudFrontDistribution.DomainName, !Sub "d${CloudFrontDistributionId}.cloudfront.net"]
   BucketName:
     Description: Name of the S3 bucket
-    Value: !Ref StaticSiteBucket
+    Value: !If [ShouldCreateS3Bucket, !Ref StaticSiteBucket, !Ref S3BucketName]
   DistributionId:
     Description: CloudFront distribution ID
-    Value: !Ref CloudFrontDistribution
+    Value: !If [ShouldCreateCloudFront, !Ref CloudFrontDistribution, !Ref CloudFrontDistributionId]

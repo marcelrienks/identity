@@ -21,6 +21,9 @@ parse_deploy_arguments() {
     args[region]="us-east-1"
     args[source_dir]="./"
     args[aws_profile]="default"
+    args[certificate_arn]=""
+    args[s3_bucket_name]=""
+    args[cloudfront_distribution_id]=""
     args[dry_run]=0
     args[verbose]=0
     
@@ -45,6 +48,18 @@ parse_deploy_arguments() {
                 ;;
             --aws-profile)
                 args[aws_profile]="$2"
+                shift 2
+                ;;
+            --certificate-arn)
+                args[certificate_arn]="$2"
+                shift 2
+                ;;
+            --s3-bucket-name)
+                args[s3_bucket_name]="$2"
+                shift 2
+                ;;
+            --cloudfront-distribution-id)
+                args[cloudfront_distribution_id]="$2"
                 shift 2
                 ;;
             --dry-run)
@@ -77,6 +92,9 @@ parse_deploy_arguments() {
     export DEPLOY_REGION="${args[region]}"
     export DEPLOY_SOURCE_DIR="${args[source_dir]}"
     export DEPLOY_AWS_PROFILE="${args[aws_profile]}"
+    export DEPLOY_CERTIFICATE_ARN="${args[certificate_arn]}"
+    export DEPLOY_S3_BUCKET_NAME="${args[s3_bucket_name]}"
+    export DEPLOY_CLOUDFRONT_DISTRIBUTION_ID="${args[cloudfront_distribution_id]}"
     export DEPLOY_DRY_RUN="${args[dry_run]}"
     
     if [[ "${args[verbose]}" -eq 1 ]]; then
@@ -127,6 +145,15 @@ load_deployrc_config() {
             aws_profile)
                 args_ref[aws_profile]="$value"
                 ;;
+            certificate_arn)
+                [[ -z "${args_ref[certificate_arn]}" ]] && args_ref[certificate_arn]="$value"
+                ;;
+            s3_bucket_name)
+                [[ -z "${args_ref[s3_bucket_name]}" ]] && args_ref[s3_bucket_name]="$value"
+                ;;
+            cloudfront_distribution_id)
+                [[ -z "${args_ref[cloudfront_distribution_id]}" ]] && args_ref[cloudfront_distribution_id]="$value"
+                ;;
         esac
     done < "$config_file"
     
@@ -148,7 +175,7 @@ validate_deploy_preflight() {
     fi
     
     # Check IAM permissions
-    if ! check_iam_permissions deploy; then
+    if ! check_iam_permissions "$DEPLOY_AWS_PROFILE"; then
         error "Insufficient IAM permissions for deployment"
         return 1
     fi
@@ -257,21 +284,19 @@ generate_stack_name() {
     echo "${stack_name,,}"
 }
 
-# Check if CloudFormation stack exists and determine mode
-check_stack_exists_mode() {
+# Check if CloudFormation stack exists and ensure it does NOT
+check_stack_not_exists() {
     local domain="$1"
     local subdomain="$2"
-    
+
     local stack_name=$(generate_stack_name "$domain" "$subdomain")
-    
-    if cfn_stack_exists "$stack_name" "$DEPLOY_REGION"; then
-        export CFN_STACK_NAME="$stack_name"
-        export CFN_STACK_MODE="UPDATE"
-        info "✓ Stack exists: $stack_name (will UPDATE)"
-        return 0
+
+    if cfn_stack_exists "$stack_name" "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE"; then
+        error "Stack already exists: $stack_name"
+        error "Use './deploy.sh update' to update existing deployments"
+        return 1
     else
         export CFN_STACK_NAME="$stack_name"
-        export CFN_STACK_MODE="CREATE"
         info "✓ Stack does not exist: $stack_name (will CREATE)"
         return 0
     fi
@@ -315,16 +340,19 @@ create_cfn_stack() {
     local domain="$1"
     local subdomain="$2"
     local stack_name="$CFN_STACK_NAME"
-    
+
     info "Creating CloudFormation stack: $stack_name"
-    
+
     # Build parameters
     local cfn_params=(
         "DomainName=$domain"
-        "SubdomainName=$subdomain"
-        "Environment=production"
+        "Subdomain=$subdomain"
+        "HostedZoneName=${domain}."
+        "CertificateArn=$DEPLOY_CERTIFICATE_ARN"
+        "S3BucketName=$DEPLOY_S3_BUCKET_NAME"
+        "CloudFrontDistributionId=$DEPLOY_CLOUDFRONT_DISTRIBUTION_ID"
     )
-    
+
     # In dry-run mode, just validate without creating
     if [[ "$DEPLOY_DRY_RUN" -eq 1 ]]; then
         info "DRY-RUN: Would create stack with parameters: ${cfn_params[@]}"
@@ -332,22 +360,22 @@ create_cfn_stack() {
     fi
     
     # Call CloudFormation create API
-    if ! cfn_create_stack "$stack_name" "$CFN_TEMPLATE_PATH" cfn_params[@] "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE"; then
+    if ! cfn_create_stack "$stack_name" "$CFN_TEMPLATE_PATH" cfn_params "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE"; then
         error "Failed to create CloudFormation stack"
         return 1
     fi
     
-    # Poll stack creation status (timeout: 10 minutes)
+    # Poll stack creation status (timeout: 45 minutes)
     debug "Polling stack creation status..."
-    local max_attempts=60  # 10 minutes with 10-second intervals
+    local max_attempts=270  # 45 minutes with 10-second intervals
     local attempt=0
     
     while [[ $attempt -lt $max_attempts ]]; do
         local status=$(cfn_get_stack_status "$stack_name" "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE")
-        
+
         if [[ "$status" == "CREATE_COMPLETE" ]]; then
             info "✓ Stack creation complete: $stack_name"
-            export CFN_STACK_ID=$(cfn_describe_stack "$stack_name" "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE" | jq -r '.StackId // empty')
+            export CFN_STACK_ID=$(cfn_describe_stack "$stack_name" "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE" | jq -r '.Stacks[0].StackId // empty')
             return 0
         elif [[ "$status" == "CREATE_FAILED" ]] || [[ "$status" == "ROLLBACK_COMPLETE" ]]; then
             error "Stack creation failed. Status: $status"
@@ -359,7 +387,7 @@ create_cfn_stack() {
         ((attempt++))
     done
     
-    error "Stack creation timeout (10 minutes exceeded)"
+    error "Stack creation timeout (45 minutes exceeded)"
     return 1
 }
 
@@ -372,16 +400,19 @@ update_cfn_stack() {
     local domain="$1"
     local subdomain="$2"
     local stack_name="$CFN_STACK_NAME"
-    
+
     info "Updating CloudFormation stack: $stack_name"
-    
+
     # Build parameters
     local cfn_params=(
         "DomainName=$domain"
-        "SubdomainName=$subdomain"
-        "Environment=production"
+        "Subdomain=$subdomain"
+        "HostedZoneName=${domain}."
+        "CertificateArn=$DEPLOY_CERTIFICATE_ARN"
+        "S3BucketName=$DEPLOY_S3_BUCKET_NAME"
+        "CloudFrontDistributionId=$DEPLOY_CLOUDFRONT_DISTRIBUTION_ID"
     )
-    
+
     # In dry-run mode, just validate without updating
     if [[ "$DEPLOY_DRY_RUN" -eq 1 ]]; then
         info "DRY-RUN: Would update stack with parameters: ${cfn_params[@]}"
@@ -389,22 +420,22 @@ update_cfn_stack() {
     fi
     
     # Call CloudFormation update API
-    if ! cfn_update_stack "$stack_name" "$CFN_TEMPLATE_PATH" cfn_params[@] "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE"; then
+    if ! cfn_update_stack "$stack_name" "$CFN_TEMPLATE_PATH" cfn_params "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE"; then
         error "Failed to update CloudFormation stack"
         return 1
     fi
     
-    # Poll stack update status (timeout: 10 minutes)
+    # Poll stack update status (timeout: 45 minutes)
     debug "Polling stack update status..."
-    local max_attempts=60  # 10 minutes with 10-second intervals
+    local max_attempts=270  # 45 minutes with 10-second intervals
     local attempt=0
     
     while [[ $attempt -lt $max_attempts ]]; do
         local status=$(cfn_get_stack_status "$stack_name" "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE")
-        
+
         if [[ "$status" == "UPDATE_COMPLETE" ]]; then
             info "✓ Stack update complete: $stack_name"
-            export CFN_STACK_ID=$(cfn_describe_stack "$stack_name" "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE" | jq -r '.StackId // empty')
+            export CFN_STACK_ID=$(cfn_describe_stack "$stack_name" "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE" | jq -r '.Stacks[0].StackId // empty')
             return 0
         elif [[ "$status" == "UPDATE_FAILED" ]] || [[ "$status" == "ROLLBACK_COMPLETE" ]]; then
             error "Stack update failed. Status: $status"
@@ -420,7 +451,7 @@ update_cfn_stack() {
         ((attempt++))
     done
     
-    error "Stack update timeout (10 minutes exceeded)"
+    error "Stack update timeout (45 minutes exceeded)"
     return 1
 }
 
@@ -440,8 +471,10 @@ prepare_file_inventory() {
     
     # Get all files matching include patterns
     local -a files_to_upload
-    find_files_to_upload "$source_dir" files_to_upload
-    
+    while IFS= read -r file; do
+        files_to_upload+=("$file")
+    done < <(find_files_to_upload "$source_dir")
+
     if [[ ${#files_to_upload[@]} -eq 0 ]]; then
         error "No files found to upload in $source_dir"
         return 1
@@ -744,30 +777,24 @@ cmd_deploy() {
         fi
     fi
     
-    # Check stack existence and determine mode
-    if ! check_stack_exists_mode "$DEPLOY_DOMAIN" "$DEPLOY_SUBDOMAIN"; then
+    # Check stack does not exist (deploy is CREATE-only)
+    if ! check_stack_not_exists "$DEPLOY_DOMAIN" "$DEPLOY_SUBDOMAIN"; then
         return 1
     fi
-    
+
     # Load CloudFormation template
     if ! load_cfn_template; then
         return 1
     fi
-    
-    # Create or update CloudFormation stack
-    if [[ "$CFN_STACK_MODE" == "CREATE" ]]; then
-        if ! create_cfn_stack "$DEPLOY_DOMAIN" "$DEPLOY_SUBDOMAIN"; then
-            return 1
-        fi
-    else
-        if ! update_cfn_stack "$DEPLOY_DOMAIN" "$DEPLOY_SUBDOMAIN"; then
-            return 1
-        fi
+
+    # Create CloudFormation stack
+    if ! create_cfn_stack "$DEPLOY_DOMAIN" "$DEPLOY_SUBDOMAIN"; then
+        return 1
     fi
     
     # Get S3 bucket name from stack outputs
     local s3_bucket=$(cfn_describe_stack "$CFN_STACK_NAME" "$DEPLOY_REGION" "$DEPLOY_AWS_PROFILE" | \
-        jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="S3BucketName") | .OutputValue')
+        jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="BucketName") | .OutputValue // empty')
     
     if [[ -z "$s3_bucket" ]]; then
         error "Could not retrieve S3 bucket name from CloudFormation stack"
