@@ -16,7 +16,7 @@ parse_update_arguments() {
     
     # Set defaults
     args[subdomain]=""
-    args[source_dir]="./"
+    args[source_dir]="."
     args[dry_run]=0
     args[verbose]=0
     args[version]="minor"

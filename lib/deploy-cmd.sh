@@ -19,7 +19,7 @@ parse_deploy_arguments() {
     args[domain]=""
     args[subdomain]="www"
     args[region]="us-east-1"
-    args[source_dir]="./"
+    args[source_dir]="."
     args[aws_profile]="default"
     args[certificate_arn]=""
     args[s3_bucket_name]=""
@@ -349,8 +349,6 @@ create_cfn_stack() {
         "Subdomain=$subdomain"
         "HostedZoneName=${domain}."
         "CertificateArn=$DEPLOY_CERTIFICATE_ARN"
-        "S3BucketName=$DEPLOY_S3_BUCKET_NAME"
-        "CloudFrontDistributionId=$DEPLOY_CLOUDFRONT_DISTRIBUTION_ID"
     )
 
     # In dry-run mode, just validate without creating
@@ -409,8 +407,6 @@ update_cfn_stack() {
         "Subdomain=$subdomain"
         "HostedZoneName=${domain}."
         "CertificateArn=$DEPLOY_CERTIFICATE_ARN"
-        "S3BucketName=$DEPLOY_S3_BUCKET_NAME"
-        "CloudFrontDistributionId=$DEPLOY_CLOUDFRONT_DISTRIBUTION_ID"
     )
 
     # In dry-run mode, just validate without updating
