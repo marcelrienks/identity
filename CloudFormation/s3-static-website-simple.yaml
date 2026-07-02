@@ -2,12 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Simplified CloudFormation template for static website hosting.
 
 Parameters:
-  IndexDocument:
-    Type: String
-    Default: index.html
-  ErrorDocument:
-    Type: String
-    Default: error.html
   HostedZoneName:
     Type: String
   DomainName:
@@ -16,27 +10,11 @@ Parameters:
     Type: String
   CertificateArn:
     Type: String
-    Default: ''
-  S3BucketName:
-    Type: String
-    Default: ''
-  CloudFrontDistributionId:
-    Type: String
-    Default: ''
-  UseExistingOriginAccessControl:
-    Type: String
-    Default: ''
-
-Conditions:
-  ShouldCreateBucket: !Equals [!Ref S3BucketName, '']
-  ShouldCreateCF: !Equals [!Ref CloudFrontDistributionId, '']
 
 Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
-    Condition: ShouldCreateBucket
     Properties:
-      BucketName: !Sub "website-${Subdomain}-${DomainName}-bucket"
       OwnershipControls:
         Rules:
           - ObjectOwnership: ObjectWriter
@@ -48,7 +26,6 @@ Resources:
 
   OAC:
     Type: AWS::CloudFront::OriginAccessControl
-    Condition: ShouldCreateCF
     Properties:
       OriginAccessControlConfig:
         Name: !Sub "${Subdomain}.${DomainName}-oac"
@@ -58,16 +35,15 @@ Resources:
 
   Distribution:
     Type: AWS::CloudFront::Distribution
-    Condition: ShouldCreateCF
     Properties:
       DistributionConfig:
         Enabled: true
-        DefaultRootObject: !Ref IndexDocument
+        DefaultRootObject: index.html
         Aliases:
           - !Sub "${Subdomain}.${DomainName}"
         Origins:
           - Id: S3Origin
-            DomainName: !If [ShouldCreateBucket, !GetAtt S3Bucket.RegionalDomainName, !Sub "${S3BucketName}.s3.amazonaws.com"]
+            DomainName: !GetAtt S3Bucket.RegionalDomainName
             S3OriginConfig: {}
             OriginAccessControlId: !Ref OAC
         DefaultCacheBehavior:
@@ -80,7 +56,10 @@ Resources:
             - GET
             - HEAD
           Compress: true
-          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
         ViewerCertificate:
           AcmCertificateArn: !Ref CertificateArn
           SslSupportMethod: sni-only
@@ -88,19 +67,21 @@ Resources:
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
-    Condition: ShouldCreateBucket
+    DependsOn: Distribution
     Properties:
       Bucket: !Ref S3Bucket
       PolicyDocument:
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
               Service: cloudfront.amazonaws.com
-            Action: s3:GetObject
-            Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
-            Condition:
-              StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+            Resource:
+              - !Sub "arn:aws:s3:::${S3Bucket}"
+              - !Sub "arn:aws:s3:::${S3Bucket}/*"
 
   DNSRecord:
     Type: AWS::Route53::RecordSet
@@ -109,7 +90,7 @@ Resources:
       Name: !Sub "${Subdomain}.${HostedZoneName}"
       Type: A
       AliasTarget:
-        DNSName: !If [ShouldCreateCF, !GetAtt Distribution.DomainName, !Sub "d${CloudFrontDistributionId}.cloudfront.net"]
+        DNSName: !GetAtt Distribution.DomainName
         HostedZoneId: Z2FDTNDATAQYW2
 
 Outputs:
@@ -118,7 +99,7 @@ Outputs:
     Value: !Sub "https://${Subdomain}.${DomainName}"
   BucketName:
     Description: S3 bucket name
-    Value: !If [ShouldCreateBucket, !Ref S3Bucket, !Ref S3BucketName]
+    Value: !Ref S3Bucket
   DistributionId:
     Description: CloudFront distribution ID
-    Value: !If [ShouldCreateCF, !Ref Distribution, !Ref CloudFrontDistributionId]
+    Value: !Ref Distribution
