@@ -6,7 +6,7 @@ Technical reference for operations, performance, security, and troubleshooting.
 
 ## Operations & Monitoring
 
-### Deployment Commands
+### Command reference
 
 ```bash
 # Initial deployment
@@ -16,72 +16,53 @@ Technical reference for operations, performance, security, and troubleshooting.
   --region us-east-1 \
   --source-dir ./website
 
-# Content update (bumps minor version: 1.1.0 → 1.2.0)
+# Content update (bumps minor version by default)
 ./deploy.sh update
 
-# Content update with major version bump (1.1.0 → 2.0.0)
+# Content update with a major version bump
 ./deploy.sh update --version major
 
-# Content update with explicit minor bump (1.1.0 → 1.2.0)
-./deploy.sh update --version minor
+# Rollback to a specific version
+./deploy.sh rollback --version 1.0.0
 
-# Dry-run (test without changes)
-./deploy.sh deploy --dry-run
+# Rollback to the previous version
+./deploy.sh rollback
 
-# Multi-subdomain deployment
-./deploy.sh deploy \
-  --domain example.com \
-  --subdomains www,blog,docs \
-  --source-dir ./website
-```
-
-### Version Management
-
-```bash
 # List versions
 ./deploy.sh versions list
 ./deploy.sh versions list --limit 50 --json
 
-# Show specific version
-./deploy.sh versions --show 20260502-143022
+# Show a specific version
+./deploy.sh versions show 20260710-120000
 
-# Rollback to version
-./deploy.sh rollback --version 1.0.0
-./deploy.sh rollback --version 1.0.0 --confirm
-
-# Rollback to previous
-./deploy.sh rollback
+# Validate configuration without making changes
+./deploy.sh validate --domain example.com
 ```
 
-### Update Command with Version Bumping
+### Supported commands and arguments
 
-```bash
-# Update with automatic minor version bump (default)
-# Bumps from 1.1.0 → 1.2.0
-./deploy.sh update
-
-# Update with major version bump
-# Bumps from 1.1.0 → 2.0.0
-./deploy.sh update --version major
-
-# Update with explicit minor version bump
-# Bumps from 1.1.0 → 1.2.0
-./deploy.sh update --version minor
-```
+| Command | Syntax | Notes |
+|---------|--------|-------|
+| `deploy` | `./deploy.sh deploy [OPTIONS]` | Requires `--domain`; accepts `--subdomain`, `--region`, `--source-dir`, `--aws-profile`, `--certificate-arn`, `--s3-bucket-name`, `--cloudfront-distribution-id`, `--dry-run`, `-v/--verbose`. |
+| `update` | `./deploy.sh update [OPTIONS]` | Uses deployment state from `.deploy/state.json`; accepts `--subdomain`, `--source-dir`, `--version [major\|minor]`, `--dry-run`, `-v/--verbose`. |
+| `rollback` | `./deploy.sh rollback [OPTIONS]` | Accepts `--version VERSION` or rolls back to the previous version by default; `--confirm` skips the prompt. |
+| `versions` | `./deploy.sh versions [list\|show] [OPTIONS]` | `list` supports `--limit` and `--json`; `show VERSION` supports `--json`. |
+| `validate` | `./deploy.sh validate [OPTIONS]` | Requires `--domain`; accepts `--subdomain`, `--region`, `--source-dir`, `--aws-profile`, `--json`. |
+| `status` | `./deploy.sh status` | Registered command, but the current implementation is still a placeholder. |
+| `destroy` | `./deploy.sh destroy [OPTIONS]` | Registered command, but the current implementation is still a placeholder. |
 
 **Version Bumping Behavior:**
 - Version increments use semantic versioning (MAJOR.MINOR.PATCH)
 - Default: `--version minor` if not specified
-- Each `update` creates new semantic version manifest in `deployments/`
-- Manifests tracked in git, enabling multi-machine deployments
-- Version history used for rollbacks via `./deploy.sh rollback --version X.Y.Z`
+- Each `update` creates a new semantic version manifest in `deployments/`
+- Manifests are tracked in git, enabling multi-machine deployments
+- Version history is used for rollbacks via `./deploy.sh rollback --version X.Y.Z`
 
 ### Validation
 
 ```bash
 ./deploy.sh validate --domain example.com
 ./deploy.sh validate --domain example.com --json
-./deploy.sh validate --dry-run
 ```
 
 ### Monitoring CloudFormation

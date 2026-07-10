@@ -8,7 +8,7 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly LIB_DIR="$SCRIPT_DIR/lib"
 readonly DEPLOY_DIR="$SCRIPT_DIR/.deploy"
 readonly TESTS_DIR="$SCRIPT_DIR/tests"
-readonly CFN_DIR="$SCRIPT_DIR/CloudFormation"
+readonly CFN_DIR="$SCRIPT_DIR/cloud"
 readonly LOG_DIR="$SCRIPT_DIR/logs"
 
 # Global constants - Application

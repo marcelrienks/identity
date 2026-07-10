@@ -10,9 +10,11 @@ Essential commands — for details see [reference.md](reference.md).
 ./deploy.sh deploy --domain marcelrienks.com          # Deploy everything
 ./deploy.sh update                                     # Update + bump minor (1.1.0 → 1.2.0)
 ./deploy.sh update --version major                     # Update + bump major (1.1.0 → 2.0.0)
-./deploy.sh versions list                              # View history
-./deploy.sh rollback --version 1.0.0                   # Rollback
-./deploy.sh validate --dry-run                         # Test (no changes)
+./deploy.sh rollback --version 1.0.0                   # Rollback to a specific version
+./deploy.sh rollback                                   # Rollback to the previous version
+./deploy.sh versions list                              # View deployment history
+./deploy.sh versions show 20260710-120000              # Inspect one version
+./deploy.sh validate --domain example.com              # Pre-flight checks only
 ./deploy.sh help                                       # Show help
 ```
 
@@ -50,7 +52,7 @@ Essential commands — for details see [reference.md](reference.md).
 ├── .deploy/                     ← Local state (NOT in git)
 │   ├── state.json               ← Current deployment metadata
 │   └── versions/                ← Cached copies (for speed)
-├── docs/                        ← Documentation
+├── wiki/                        ← Documentation
 │   ├── guide.md                 ← User guide
 │   ├── quickref.md              ← Quick reference
 │   ├── reference.md             ← Technical reference
@@ -89,9 +91,9 @@ Essential commands — for details see [reference.md](reference.md).
 | Doc | Purpose |
 |---|---|
 | [../README.md](../README.md) | Project overview |
-| [guide.md](guide.md) | Workflows & configuration |
-| [reference.md](reference.md) | Commands, operations, performance, security |
-| [architecture.md](architecture.md) | System design & decisions |
-| [deployments.md](deployments.md) | Manifest storage & multi-machine |
+| [guide.md](../wiki/guide.md) | Workflows & configuration |
+| [reference.md](../wiki/reference.md) | Commands, operations, performance, security |
+| [architecture.md](../wiki/architecture.md) | System design & decisions |
+| [deployments.md](../wiki/deployments.md) | Manifest storage & multi-machine |
 
-See [reference.md](reference.md) for detailed command reference and troubleshooting.
+See [reference.md](../wiki/reference.md) for detailed command reference and troubleshooting.

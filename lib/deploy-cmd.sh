@@ -308,7 +308,7 @@ check_stack_not_exists() {
 
 # Load and validate CloudFormation template
 load_cfn_template() {
-    local template_path="./CloudFormation/s3-static-website-simple.yaml"
+    local template_path="./cloud/s3-static-website-deploy.yaml"
     
     if [[ ! -f "$template_path" ]]; then
         error "CloudFormation template not found: $template_path"

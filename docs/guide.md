@@ -224,24 +224,97 @@ DEPLOY_DOMAIN=override.com ./deploy.sh deploy
 
 ---
 
-## Command Arguments Reference
+## Command Reference
 
-### Deploy Command
+The deployment script supports the following commands. This section consolidates the supported arguments so the CLI usage stays consistent with the implementation.
+
+### Common options
+
+| Option | Applies to | Description |
+|--------|------------|-------------|
+| `--domain` | `deploy`, `validate` | Domain name (for example `example.com`) |
+| `--subdomain` | `deploy`, `update`, `validate` | Subdomain prefix (default `www`) |
+| `--region` | `deploy`, `validate` | AWS region (default `us-east-1`) |
+| `--source-dir` | `deploy`, `update`, `validate` | Directory containing the website files |
+| `--aws-profile` | `deploy`, `validate` | AWS CLI profile name |
+| `--certificate-arn` | `deploy` | Reuse an existing ACM certificate |
+| `--s3-bucket-name` | `deploy` | Reuse an existing S3 bucket |
+| `--cloudfront-distribution-id` | `deploy` | Reuse an existing CloudFront distribution |
+| `--dry-run` | `deploy`, `update` | Show what would happen without making AWS changes |
+| `-v`, `--verbose` | all commands | Enable detailed debug output |
+| `-h`, `--help` | all commands | Show command-specific usage |
+
+### Deploy
 
 **Syntax:** `./deploy.sh deploy [OPTIONS]`
 
 | Argument | Env Var | Config Key | Default | Required | Description |
 |----------|---------|-----------|---------|----------|-------------|
-| `--domain` | `DEPLOY_DOMAIN` | `domain` | — | ✅ Yes | Domain name (e.g., `example.com`). Must be registered in Route 53 hosted zone. |
-| `--subdomain` | `DEPLOY_SUBDOMAIN` | `subdomain` | `www` | No | Subdomain prefix (e.g., `www`, `blog`, `docs`, `api`). Creates `subdomain.domain.com`. |
-| `--region` | `DEPLOY_REGION` | `region` | `us-east-1` | No | AWS region. **Must be `us-east-1`** for CloudFront + ACM integration. |
-| `--source-dir` | `DEPLOY_SOURCE_DIR` | `source_dir` | `./` | No | Directory containing website files. Uploaded to S3 bucket. |
-| `--aws-profile` | `DEPLOY_AWS_PROFILE` | `aws_profile` | `default` | No | AWS CLI profile name. Defined in `~/.aws/config`. |
-| `--certificate-arn` | `DEPLOY_CERTIFICATE_ARN` | `certificate_arn` | `` | No | Existing ACM certificate ARN. Leave empty to auto-provision. Format: `arn:aws:acm:us-east-1:123456789012:certificate/12345678-...` |
-| `--s3-bucket-name` | `DEPLOY_S3_BUCKET_NAME` | `s3_bucket_name` | `` | No | Existing S3 bucket name. Leave empty to auto-create. Must be accessible and have proper permissions. |
-| `--cloudfront-distribution-id` | `DEPLOY_CLOUDFRONT_DISTRIBUTION_ID` | `cloudfront_distribution_id` | `` | No | Existing CloudFront distribution ID. Leave empty to auto-create. Format: `E1234ABCD5FGH` |
-| `--dry-run` | — | `dry_run` | — | No | Validate without making AWS changes. Useful for testing. |
-| `-v`, `--verbose` | — | `verbose` | — | No | Enable debug output. Shows detailed operation logs. |
+| `--domain` | `DEPLOY_DOMAIN` | `domain` | — | ✅ Yes | Domain name (for example `example.com`). Must be registered in Route 53. |
+| `--subdomain` | `DEPLOY_SUBDOMAIN` | `subdomain` | `www` | No | Subdomain prefix (for example `www`, `blog`, `docs`). |
+| `--region` | `DEPLOY_REGION` | `region` | `us-east-1` | No | AWS region. Must be `us-east-1` for CloudFront + ACM integration. |
+| `--source-dir` | `DEPLOY_SOURCE_DIR` | `source_dir` | `./` | No | Directory containing website files. |
+| `--aws-profile` | `DEPLOY_AWS_PROFILE` | `aws_profile` | `default` | No | AWS CLI profile name. |
+| `--certificate-arn` | `DEPLOY_CERTIFICATE_ARN` | `certificate_arn` | empty | No | Existing ACM certificate ARN. |
+| `--s3-bucket-name` | `DEPLOY_S3_BUCKET_NAME` | `s3_bucket_name` | empty | No | Existing S3 bucket name. |
+| `--cloudfront-distribution-id` | `DEPLOY_CLOUDFRONT_DISTRIBUTION_ID` | `cloudfront_distribution_id` | empty | No | Existing CloudFront distribution ID. |
+| `--dry-run` | — | `dry_run` | disabled | No | Validate without making AWS changes. |
+| `-v`, `--verbose` | — | `verbose` | disabled | No | Enable debug output. |
+
+### Update
+
+**Syntax:** `./deploy.sh update [OPTIONS]`
+
+| Argument | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `--subdomain` | saved state value | No | Override the subdomain for the update. |
+| `--source-dir` | `.` | No | Directory containing the website files to compare and upload. |
+| `--version` | `minor` | No | Version bump strategy. Supported values are `major` and `minor`. |
+| `--dry-run` | disabled | No | Show the changed files without uploading them. |
+| `-v`, `--verbose` | disabled | No | Enable debug output. |
+
+### Rollback
+
+**Syntax:** `./deploy.sh rollback [OPTIONS]`
+
+| Argument | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `--version VERSION` | previous version | No | Version ID to restore. |
+| `--confirm` | disabled | No | Skip the confirmation prompt for automation. |
+| `-h`, `--help` | — | No | Show rollback usage. |
+
+### Versions
+
+**Syntax:** `./deploy.sh versions [SUBCOMMAND] [OPTIONS]`
+
+| Subcommand / Option | Description |
+|---------------------|-------------|
+| `list` | Show recent deployment versions (default) |
+| `show VERSION` | Display the details for a specific version |
+| `--limit N` | Limit the number of versions shown in `list` |
+| `--json` | Output JSON for `list` or `show` |
+| `-h`, `--help` | Show versions usage |
+
+### Validate
+
+**Syntax:** `./deploy.sh validate [OPTIONS]`
+
+| Argument | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `--domain` | — | ✅ Yes | Domain to validate. |
+| `--subdomain` | `www` | No | Subdomain to validate. |
+| `--region` | `us-east-1` | No | AWS region to validate. |
+| `--source-dir` | `./` | No | Source directory to validate. |
+| `--aws-profile` | `default` | No | AWS profile to validate. |
+| `--json` | disabled | No | Output validation results as JSON. |
+| `-h`, `--help` | — | No | Show validation usage. |
+
+### Other registered commands
+
+| Command | Status in this repo |
+|---------|----------------------|
+| `status` | Registered, but the current implementation is a placeholder. |
+| `destroy` | Registered, but the current implementation is a placeholder. |
 
 ### Resource Provisioning Modes
 
@@ -300,15 +373,6 @@ aws s3 ls
 ```bash
 aws cloudfront list-distributions | jq '.DistributionList.Items[] | {Id, DomainName, Aliases}'
 ```
-
-### Other Commands
-
-| Command | Syntax | Arguments |
-|---------|--------|-----------|
-| **Update** | `./deploy.sh update` | `--version [major\|minor]`, `--dry-run`, `-v` |
-| **Rollback** | `./deploy.sh rollback` | `--version VERSION`, `--dry-run`, `-v` |
-| **Versions** | `./deploy.sh versions` | `--region`, `--aws-profile` |
-| **Validate** | `./deploy.sh validate` | `--dry-run`, `-v` |
 
 ---
 

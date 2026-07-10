@@ -157,7 +157,7 @@ run_comprehensive_validation() {
     
     # 7. CloudFormation template validation
     echo "Validating CloudFormation template..."
-    if validate_cfn_template "CloudFormation/s3-static-website.yaml"; then
+    if validate_cfn_template "cloud/s3-static-website-validate.yaml"; then
         success "✓ CloudFormation template valid"
         ((validation_passed++))
     else

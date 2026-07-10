@@ -10,7 +10,7 @@ node_modules/
 spec/
 
 # Documentation (not for production)
-docs/
+wiki/
 specs/
 README.md
 *.md
@@ -44,6 +44,6 @@ build/
 deploy.sh
 lib/
 tests/
-CloudFormation/
+cloud/
 .deployrc*
 *.schema.json

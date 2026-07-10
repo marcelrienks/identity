@@ -86,56 +86,57 @@ head -1 deploy.sh  # Should show #!/opt/homebrew/bin/bash
 
 **What happens automatically:**
 - ✓ Creates S3 bucket with versioning
-- ✓ Creates CloudFront CDN distribution  
+- ✓ Creates CloudFront CDN distribution
 - ✓ Creates Route 53 DNS alias records
 - ✓ Requests ACM SSL/TLS certificate (or uses existing)
 - ✓ Uploads all website files
 - ✓ Saves deployment state for future updates
 - **Time:** ~6-8 minutes
 
-#### Deploy Command Arguments
+## Command Reference
 
-| Argument | Default | Required | Description |
-|----------|---------|----------|-------------|
-| `--domain` | — | ✅ Yes | Domain name (e.g., `example.com`). Can also set `domain` in `.deployrc` |
-| `--subdomain` | `www` | No | Subdomain prefix (e.g., `www`, `blog`, `docs`). Set in `.deployrc` or via flag |
-| `--region` | `us-east-1` | No | AWS region (must be `us-east-1` for CloudFront + ACM) |
-| `--source-dir` | `./` | No | Directory containing website files to deploy |
-| `--aws-profile` | `default` | No | AWS CLI profile to use (see `~/.aws/config`) |
-| `--certificate-arn` | `` | No | Use existing ACM certificate. Leave empty to auto-provision new cert |
-| `--s3-bucket-name` | `` | No | Use existing S3 bucket. Leave empty to auto-create new bucket |
-| `--cloudfront-distribution-id` | `` | No | Use existing CloudFront distribution. Leave empty to auto-create new distribution |
-| `--dry-run` | — | No | Validate configuration without making AWS changes |
-| `-v`, `--verbose` | — | No | Show detailed debug output |
+The deployment script exposes several commands. The most complete references live in [wiki/guide.md](wiki/guide.md) and [wiki/reference.md](wiki/reference.md).
 
-**Examples:**
+### Common options
+
+These options are available on the relevant commands:
+
+| Option | Applies to | Description |
+|--------|------------|-------------|
+| `--domain` | `deploy`, `validate` | Domain name (for example `example.com`) |
+| `--subdomain` | `deploy`, `update`, `validate` | Subdomain prefix (default `www`) |
+| `--region` | `deploy`, `validate` | AWS region (default `us-east-1`) |
+| `--source-dir` | `deploy`, `update`, `validate` | Directory containing the website files |
+| `--aws-profile` | `deploy`, `validate` | AWS CLI profile name |
+| `--certificate-arn` | `deploy` | Reuse an existing ACM certificate |
+| `--s3-bucket-name` | `deploy` | Reuse an existing S3 bucket |
+| `--cloudfront-distribution-id` | `deploy` | Reuse an existing CloudFront distribution |
+| `--dry-run` | `deploy`, `update` | Show what would happen without making AWS changes |
+| `-v`, `--verbose` | all commands | Enable detailed debug output |
+| `-h`, `--help` | all commands | Show command-specific usage |
+
+### Commands at a glance
+
+| Command | Purpose | Key arguments |
+|---------|---------|---------------|
+| `deploy` | Provision AWS resources and upload the initial site | `--domain` (required), `--subdomain`, `--region`, `--source-dir`, `--aws-profile`, `--certificate-arn`, `--s3-bucket-name`, `--cloudfront-distribution-id`, `--dry-run` |
+| `update` | Upload changed files, invalidate cache, and create a new version | `--subdomain`, `--source-dir`, `--version [major\|minor]`, `--dry-run` |
+| `rollback` | Restore a prior deployment version | `--version VERSION`, `--confirm` |
+| `versions` | List or inspect deployment history | `list`, `show VERSION`, `--limit`, `--json` |
+| `validate` | Run pre-flight checks without changing AWS resources | `--domain` (required), `--subdomain`, `--region`, `--source-dir`, `--aws-profile`, `--json` |
+| `status` | Registered command; current implementation is a placeholder | — |
+| `destroy` | Registered command; current implementation is a placeholder | `--confirm` |
+
+### Examples
 
 ```bash
-# Auto-provision all resources (default)
 ./deploy.sh deploy --domain example.com --subdomain www
-
-# Use existing certificate
-./deploy.sh deploy --domain example.com --certificate-arn arn:aws:acm:us-east-1:123456789012:certificate/...
-
-# Use existing S3 bucket and CloudFront distribution
-./deploy.sh deploy --domain example.com \
-  --s3-bucket-name my-existing-bucket \
-  --cloudfront-distribution-id E1234ABCD5FGH
-
-# Mix auto-provisioned and existing resources
-./deploy.sh deploy --domain example.com \
-  --certificate-arn arn:aws:acm:... \
-  --s3-bucket-name my-bucket
-  # CloudFront will be auto-created
-
-# Specific AWS profile
-./deploy.sh deploy --domain example.com --aws-profile production
-
-# Validate before deploying
-./deploy.sh deploy --domain example.com --dry-run --verbose
-
-# Deploy different subdomain to same domain
-./deploy.sh deploy --domain example.com --subdomain blog
+./deploy.sh update
+./deploy.sh update --version major
+./deploy.sh rollback --version previous
+./deploy.sh versions list --limit 10
+./deploy.sh versions show 20260710-120000
+./deploy.sh validate --domain example.com
 ```
 
 **Configuration Priority** (highest to lowest):
@@ -144,40 +145,16 @@ head -1 deploy.sh  # Should show #!/opt/homebrew/bin/bash
 3. `.deployrc` config file
 4. Built-in defaults
 
-### Update After Changes
-
-```bash
-./deploy.sh update
-```
-
-**What happens:**
-- ✓ Bumps version (default: minor, e.g., 1.1.0 → 1.2.0)
-- ✓ Detects only changed files
-- ✓ Uploads changed files to S3
-- ✓ Invalidates CloudFront cache
-- ✓ Creates versioned manifest for rollback
-- **Time:** ~2-4 minutes, changes live in 1-2 min
-
-**Version bumping:**
-```bash
-./deploy.sh update                    # Minor bump: 1.1.0 → 1.2.0
-./deploy.sh update --version major    # Major bump: 1.1.0 → 2.0.0
-```
-
-### Rollback If Needed
-
-```bash
-./deploy.sh rollback --version previous
-```
-
 ---
 
 ## 📖 Full Documentation
 
-- **[docs/guide.md](docs/guide.md)** — User guide with workflows, configuration, examples
-- **[docs/reference.md](docs/reference.md)** — Technical reference: operations, performance, security, troubleshooting
-- **[docs/architecture.md](docs/architecture.md)** — System design, deployment flow, state management
-- **[docs/deployments.md](docs/deployments.md)** — Version manifest storage and multi-machine deployments
+- **[wiki/guide.md](wiki/guide.md)** — User guide with workflows, configuration, examples
+- **[wiki/reference.md](wiki/reference.md)** — Technical reference: operations, performance, security, troubleshooting
+- **[wiki/architecture.md](wiki/architecture.md)** — System design, deployment flow, state management
+- **[wiki/deployments.md](wiki/deployments.md)** — Version manifest storage and multi-machine deployments
+
+The deployment uses [cloud/s3-static-website-deploy.yaml](cloud/s3-static-website-deploy.yaml) for the real deploy/update flow, while [cloud/s3-static-website-validate.yaml](cloud/s3-static-website-validate.yaml) is used by the validation command. In practice: `./deploy.sh deploy` and `./deploy.sh update` use the deploy template, and `./deploy.sh validate` checks the validation template.
 
 See `./deploy.sh help` for all available commands.
 
